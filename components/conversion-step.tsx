@@ -78,7 +78,12 @@ export function ConversionStep({
       }
 
       const result = await response.json()
-      console.log("[v0] Conversion successful for:", file.name)
+      console.log("[v0] API Response:", result)
+
+      let markdownContent = "Conversion completed"
+      if (result.status === "success" && result.files && result.files.length > 0) {
+        markdownContent = result.files[0].data || "No content received"
+      }
 
       // Update status to completed with result
       setConversionStatuses((prev) =>
@@ -87,7 +92,7 @@ export function ConversionStep({
             ? {
                 ...status,
                 status: "completed",
-                markdownResult: result.markdown || result.content || "Conversion completed",
+                markdownResult: markdownContent,
               }
             : status,
         ),
