@@ -31,6 +31,11 @@ export default function TestCaseGenerator() {
     setCurrentStep(1)
   }
 
+  const handleBackToStreamSelection = () => {
+    setSelectedStream(null)
+    setCurrentStep(0)
+  }
+
   const handleFilesUploaded = (files: UploadedFile[]) => {
     setUploadedFiles(files)
   }
@@ -108,6 +113,7 @@ export default function TestCaseGenerator() {
               <FileUploadStep
                 onFilesUploaded={handleFilesUploaded}
                 onNext={() => setCurrentStep(2)}
+                onBack={handleBackToStreamSelection}
                 uploadedFiles={uploadedFiles}
                 selectedStream={selectedStream}
               />

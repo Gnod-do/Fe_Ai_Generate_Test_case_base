@@ -13,6 +13,7 @@ import type { UploadedFile, FileType, StreamType } from "@/app/page"
 interface FileUploadStepProps {
   onFilesUploaded: (files: UploadedFile[]) => void
   onNext: () => void
+  onBack: () => void // Added onBack prop
   uploadedFiles: UploadedFile[]
   selectedStream: StreamType | null
 }
@@ -24,7 +25,13 @@ const fileTypes: { type: FileType; label: string; color: string }[] = [
   { type: "error", label: "Error Code", color: "bg-red-100 text-red-800" },
 ]
 
-export function FileUploadStep({ onFilesUploaded, onNext, uploadedFiles, selectedStream }: FileUploadStepProps) {
+export function FileUploadStep({
+  onFilesUploaded,
+  onNext,
+  onBack,
+  uploadedFiles,
+  selectedStream,
+}: FileUploadStepProps) {
   const [dragActive, setDragActive] = useState(false)
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -141,7 +148,10 @@ export function FileUploadStep({ onFilesUploaded, onNext, uploadedFiles, selecte
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={onBack}>
+            Back
+          </Button>
           <Button onClick={onNext} disabled={uploadedFiles.length === 0} className="min-w-32">
             Next Step
           </Button>
