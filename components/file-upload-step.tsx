@@ -79,6 +79,7 @@ export function FileUploadStep({
   }
 
   const removeFile = (fileId: string) => {
+    console.log("[v0] Removing file with ID:", fileId)
     const updatedFiles = uploadedFiles.filter((file) => file.id !== fileId)
     onFilesUploaded(updatedFiles)
   }
@@ -98,7 +99,7 @@ export function FileUploadStep({
       <CardContent className="space-y-6">
         <div
           className={cn(
-            "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
+            "relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
             dragActive ? "border-primary bg-primary/5" : "border-border",
             "hover:border-primary/50 hover:bg-primary/5",
           )}
@@ -106,20 +107,15 @@ export function FileUploadStep({
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
+          onClick={() => document.getElementById("file-input")?.click()}
         >
           <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <div className="space-y-2">
             <p className="text-lg font-medium">Drop your HTML files here</p>
             <p className="text-muted-foreground">or click to browse</p>
           </div>
-          <input
-            type="file"
-            multiple
-            accept=".html,.htm"
-            onChange={handleFileInput}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
         </div>
+        <input id="file-input" type="file" multiple accept=".html,.htm" onChange={handleFileInput} className="hidden" />
 
         {uploadedFiles.length > 0 && (
           <div className="space-y-3">
@@ -138,7 +134,16 @@ export function FileUploadStep({
                         </Badge>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => removeFile(file.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        removeFile(file.id)
+                      }}
+                      className="hover:bg-destructive/10 hover:text-destructive"
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -149,7 +154,13 @@ export function FileUploadStep({
         )}
 
         <div className="flex justify-between">
-          <Button variant="outline" onClick={onBack}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              console.log("[v0] Back button clicked")
+              onBack()
+            }}
+          >
             Back
           </Button>
           <Button onClick={onNext} disabled={uploadedFiles.length === 0} className="min-w-32">
