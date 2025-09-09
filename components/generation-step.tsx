@@ -5,16 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { FileText, Download, Loader2, CheckCircle } from "lucide-react"
-import type { UploadedFile } from "@/app/page"
+import type { UploadedFile, StreamType } from "@/app/page"
 
 interface GenerationStepProps {
   uploadedFiles: UploadedFile[]
   isGenerating: boolean
   onGenerate: () => void
   onBack: () => void
+  selectedStream: StreamType | null
 }
 
-export function GenerationStep({ uploadedFiles, isGenerating, onGenerate, onBack }: GenerationStepProps) {
+export function GenerationStep({
+  uploadedFiles,
+  isGenerating,
+  onGenerate,
+  onBack,
+  selectedStream,
+}: GenerationStepProps) {
   const fileTypeLabels = {
     api: "API Files",
     design: "Detailed Design",
@@ -23,31 +30,79 @@ export function GenerationStep({ uploadedFiles, isGenerating, onGenerate, onBack
   }
 
   const handleDownloadCSV = () => {
-    // Mock CSV content - in real app, this would be the actual generated test cases
-    const csvContent = `Test Case ID,Description,Expected Result,Priority,Category
-TC001,Verify API endpoint authentication,User should be authenticated successfully,High,API
-TC002,Test error handling for invalid input,System should return appropriate error message,Medium,Error Handling
-TC003,Validate business scenario workflow,Process should complete without errors,High,Business Logic
-TC004,Check design implementation,UI should match design specifications,Medium,UI/UX`
+    const businessCsvContent = `Test Case ID,Description,Expected Result,Priority,Category
+TC001,Verify user login workflow,User should be authenticated successfully,High,Business Logic
+TC002,Test order processing flow,Order should be processed without errors,High,Business Process
+TC003,Validate payment integration,Payment should complete successfully,High,Business Logic
+TC004,Check user profile management,Profile updates should be saved correctly,Medium,User Management`
+
+    const validationCsvContent = `Test Case ID,Description,Expected Result,Priority,Category
+TC001,Validate email format input,System should accept valid email formats only,High,Input Validation
+TC002,Test password strength requirements,System should enforce password complexity rules,High,Data Validation
+TC003,Verify field length limits,System should reject inputs exceeding maximum length,Medium,Boundary Testing
+TC004,Test SQL injection prevention,System should sanitize all user inputs,High,Security Validation`
+
+    const csvContent = selectedStream === "business" ? businessCsvContent : validationCsvContent
+    const filename = `${selectedStream}-test-cases.csv`
 
     const blob = new Blob([csvContent], { type: "text/csv" })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "generated-test-cases.csv"
+    a.download = filename
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     window.URL.revokeObjectURL(url)
   }
 
+  const getGenerationDescription = () => {
+    if (selectedStream === "business") {
+      return {
+        title: "Business Test Case Generation",
+        description: "Generate test cases focused on business logic, user workflows, and functional requirements.",
+        features: [
+          "• Business workflow validation tests",
+          "• User story acceptance criteria",
+          "• Functional requirement verification",
+          "• End-to-end process testing",
+        ],
+      }
+    } else {
+      return {
+        title: "Validation Test Case Generation",
+        description: "Generate test cases focused on data validation, input verification, and error handling.",
+        features: [
+          "• Input validation and sanitization tests",
+          "• Data integrity and boundary testing",
+          "• Error handling and edge cases",
+          "• Security validation scenarios",
+        ],
+      }
+    }
+  }
+
+  const generationInfo = getGenerationDescription()
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Generate Test Cases</CardTitle>
-        <CardDescription>Generate comprehensive test cases based on your converted documents.</CardDescription>
+        <CardTitle>{generationInfo.title}</CardTitle>
+        <CardDescription>{generationInfo.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {selectedStream && (
+          <div className="flex items-center space-x-2 p-3 bg-accent/10 rounded-lg">
+            <Badge
+              variant="secondary"
+              className={selectedStream === "business" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}
+            >
+              {selectedStream.charAt(0).toUpperCase() + selectedStream.slice(1)} Stream
+            </Badge>
+            <span className="text-sm text-muted-foreground">Generating {selectedStream} focused test cases</span>
+          </div>
+        )}
+
         <div className="space-y-4">
           <h3 className="font-medium">Source Documents Summary</h3>
           <div className="grid gap-3">
@@ -70,15 +125,15 @@ TC004,Check design implementation,UI should match design specifications,Medium,U
           <div className="space-y-4 p-6 bg-muted rounded-lg">
             <div className="text-center space-y-3">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              <p className="font-medium">Generating Test Cases...</p>
+              <p className="font-medium">Generating {selectedStream} Test Cases...</p>
               <p className="text-sm text-muted-foreground">
-                Analyzing your documents and creating comprehensive test scenarios
+                Analyzing your documents and creating comprehensive {selectedStream} test scenarios
               </p>
             </div>
             <Progress value={65} className="w-full" />
             <div className="text-center">
               <p className="text-xs text-muted-foreground">
-                Processing API specifications, design requirements, and error scenarios...
+                Processing documents for {selectedStream} test case generation...
               </p>
             </div>
           </div>
@@ -91,17 +146,14 @@ TC004,Check design implementation,UI should match design specifications,Medium,U
               <p className="font-medium">Ready to Generate</p>
             </div>
             <p className="text-sm text-muted-foreground">
-              Your documents have been processed and are ready for test case generation. The system will analyze your
-              API specifications, design documents, business scenarios, and error codes to create comprehensive test
-              cases.
+              Your documents have been processed and are ready for {selectedStream} test case generation.
             </p>
             <div className="bg-accent/10 p-4 rounded-lg">
               <p className="text-sm font-medium mb-2">What will be generated:</p>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Functional test cases based on API specifications</li>
-                <li>• UI/UX test scenarios from design documents</li>
-                <li>• Business workflow validation tests</li>
-                <li>• Error handling and edge case scenarios</li>
+                {generationInfo.features.map((feature, index) => (
+                  <li key={index}>{feature}</li>
+                ))}
               </ul>
             </div>
           </div>
@@ -125,7 +177,7 @@ TC004,Check design implementation,UI should match design specifications,Medium,U
                   Generating...
                 </>
               ) : (
-                "Generate Test Cases"
+                `Generate ${selectedStream} Test Cases`
               )}
             </Button>
           </div>

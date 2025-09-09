@@ -6,8 +6,10 @@ import { ConversionStep } from "@/components/conversion-step"
 import { ReviewStep } from "@/components/review-step"
 import { GenerationStep } from "@/components/generation-step"
 import { ProgressIndicator } from "@/components/progress-indicator"
+import { StreamSelectionStep } from "@/components/stream-selection-step"
 
 export type FileType = "api" | "design" | "scenario" | "error"
+export type StreamType = "business" | "validation"
 
 export interface UploadedFile {
   id: string
@@ -18,10 +20,16 @@ export interface UploadedFile {
 }
 
 export default function TestCaseGenerator() {
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(0) // Start at step 0 for stream selection
+  const [selectedStream, setSelectedStream] = useState<StreamType | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [isConverting, setIsConverting] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleStreamSelected = (stream: StreamType) => {
+    setSelectedStream(stream)
+    setCurrentStep(1)
+  }
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
     setUploadedFiles(files)
@@ -64,12 +72,14 @@ export default function TestCaseGenerator() {
 
   const handleGenerateTestCases = async () => {
     setIsGenerating(true)
+    console.log(`Generating ${selectedStream} test cases...`)
     // Simulate test case generation
     await new Promise((resolve) => setTimeout(resolve, 3000))
     setIsGenerating(false)
   }
 
   const steps = [
+    { number: 0, title: "Select Stream", description: "Choose test case type" },
     { number: 1, title: "Upload Files", description: "Upload HTML documents" },
     { number: 2, title: "Convert", description: "Convert to Markdown" },
     { number: 3, title: "Review", description: "Review converted files" },
@@ -83,18 +93,23 @@ export default function TestCaseGenerator() {
           <header className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Test Case Generator</h1>
             <p className="text-muted-foreground">
-              Convert HTML documents to Markdown and generate comprehensive test cases
+              Choose your test case stream and convert HTML documents to generate comprehensive test cases
             </p>
           </header>
 
           <ProgressIndicator steps={steps} currentStep={currentStep} />
 
           <div className="mt-8">
+            {currentStep === 0 && (
+              <StreamSelectionStep onStreamSelected={handleStreamSelected} selectedStream={selectedStream} />
+            )}
+
             {currentStep === 1 && (
               <FileUploadStep
                 onFilesUploaded={handleFilesUploaded}
                 onNext={() => setCurrentStep(2)}
                 uploadedFiles={uploadedFiles}
+                selectedStream={selectedStream}
               />
             )}
 
@@ -104,6 +119,7 @@ export default function TestCaseGenerator() {
                 isConverting={isConverting}
                 onConvert={handleConvertToMD}
                 onBack={() => setCurrentStep(1)}
+                selectedStream={selectedStream}
               />
             )}
 
@@ -114,6 +130,7 @@ export default function TestCaseGenerator() {
                 onConfirm={handleConfirmFiles}
                 onRegenerate={handleRegenerateFile}
                 onBack={() => setCurrentStep(2)}
+                selectedStream={selectedStream}
               />
             )}
 
@@ -123,6 +140,7 @@ export default function TestCaseGenerator() {
                 isGenerating={isGenerating}
                 onGenerate={handleGenerateTestCases}
                 onBack={() => setCurrentStep(3)}
+                selectedStream={selectedStream}
               />
             )}
           </div>

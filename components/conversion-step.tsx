@@ -4,16 +4,23 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText, ArrowRight, Loader2 } from "lucide-react"
-import type { UploadedFile } from "@/app/page"
+import type { UploadedFile, StreamType } from "@/app/page"
 
 interface ConversionStepProps {
   uploadedFiles: UploadedFile[]
   isConverting: boolean
   onConvert: () => void
   onBack: () => void
+  selectedStream: StreamType | null
 }
 
-export function ConversionStep({ uploadedFiles, isConverting, onConvert, onBack }: ConversionStepProps) {
+export function ConversionStep({
+  uploadedFiles,
+  isConverting,
+  onConvert,
+  onBack,
+  selectedStream,
+}: ConversionStepProps) {
   const fileTypeLabels = {
     api: "API Files",
     design: "Detailed Design",
@@ -26,10 +33,24 @@ export function ConversionStep({ uploadedFiles, isConverting, onConvert, onBack 
       <CardHeader>
         <CardTitle>Convert to Markdown</CardTitle>
         <CardDescription>
-          Review your uploaded files and convert them to Markdown format for processing.
+          Review your uploaded files and convert them to Markdown format for {selectedStream} test case generation.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {selectedStream && (
+          <div className="flex items-center space-x-2 p-3 bg-accent/10 rounded-lg">
+            <Badge
+              variant="secondary"
+              className={selectedStream === "business" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}
+            >
+              {selectedStream.charAt(0).toUpperCase() + selectedStream.slice(1)} Stream
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              Files will be optimized for {selectedStream} test case generation
+            </span>
+          </div>
+        )}
+
         <div className="space-y-3">
           <h3 className="font-medium">Files Ready for Conversion</h3>
           <div className="grid gap-3">

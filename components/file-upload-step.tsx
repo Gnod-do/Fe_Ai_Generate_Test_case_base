@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Upload, FileText, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { UploadedFile, FileType } from "@/app/page"
+import type { UploadedFile, FileType, StreamType } from "@/app/page"
 
 interface FileUploadStepProps {
   onFilesUploaded: (files: UploadedFile[]) => void
   onNext: () => void
   uploadedFiles: UploadedFile[]
+  selectedStream: StreamType | null
 }
 
 const fileTypes: { type: FileType; label: string; color: string }[] = [
@@ -23,7 +24,7 @@ const fileTypes: { type: FileType; label: string; color: string }[] = [
   { type: "error", label: "Error Code", color: "bg-red-100 text-red-800" },
 ]
 
-export function FileUploadStep({ onFilesUploaded, onNext, uploadedFiles }: FileUploadStepProps) {
+export function FileUploadStep({ onFilesUploaded, onNext, uploadedFiles, selectedStream }: FileUploadStepProps) {
   const [dragActive, setDragActive] = useState(false)
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -84,7 +85,7 @@ export function FileUploadStep({ onFilesUploaded, onNext, uploadedFiles }: FileU
       <CardHeader>
         <CardTitle>Upload HTML Documents</CardTitle>
         <CardDescription>
-          Upload your API files, detailed design, business scenario, and error code documents in HTML format.
+          Upload your documents for {selectedStream} test case generation. All files should be in HTML format.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

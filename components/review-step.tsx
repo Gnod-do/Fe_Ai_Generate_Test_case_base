@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileText, RefreshCw, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
-import type { UploadedFile } from "@/app/page"
+import type { UploadedFile, StreamType } from "@/app/page"
 
 interface ReviewStepProps {
   uploadedFiles: UploadedFile[]
@@ -15,9 +15,17 @@ interface ReviewStepProps {
   onConfirm: () => void
   onRegenerate: (fileId: string) => void
   onBack: () => void
+  selectedStream: StreamType | null
 }
 
-export function ReviewStep({ uploadedFiles, isConverting, onConfirm, onRegenerate, onBack }: ReviewStepProps) {
+export function ReviewStep({
+  uploadedFiles,
+  isConverting,
+  onConfirm,
+  onRegenerate,
+  onBack,
+  selectedStream,
+}: ReviewStepProps) {
   const [selectedFile, setSelectedFile] = useState(uploadedFiles[0]?.id || "")
 
   const fileTypeLabels = {
@@ -34,10 +42,25 @@ export function ReviewStep({ uploadedFiles, isConverting, onConfirm, onRegenerat
       <CardHeader>
         <CardTitle>Review Converted Files</CardTitle>
         <CardDescription>
-          Review the converted Markdown files. If any file doesn't look correct, you can regenerate it.
+          Review the converted Markdown files for {selectedStream} test case generation. If any file doesn't look
+          correct, you can regenerate it.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {selectedStream && (
+          <div className="flex items-center space-x-2 p-3 bg-accent/10 rounded-lg">
+            <Badge
+              variant="secondary"
+              className={selectedStream === "business" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}
+            >
+              {selectedStream.charAt(0).toUpperCase() + selectedStream.slice(1)} Stream
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              Files have been converted with focus on {selectedStream} test case requirements
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* File List */}
           <div className="space-y-3">
