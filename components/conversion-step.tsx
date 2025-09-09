@@ -82,7 +82,18 @@ export function ConversionStep({
 
       let markdownContent = "Conversion completed"
       if (result.status === "success" && result.files && result.files.length > 0) {
-        markdownContent = result.files[0].data || "No content received"
+        const base64Data = result.files[0].data
+        if (base64Data) {
+          try {
+            // Decode base64 to UTF-8
+            markdownContent = atob(base64Data)
+          } catch (decodeError) {
+            console.error("[v0] Base64 decode error:", decodeError)
+            markdownContent = base64Data // Fallback to original data if decode fails
+          }
+        } else {
+          markdownContent = "No content received"
+        }
       }
 
       // Update status to completed with result
@@ -168,7 +179,9 @@ export function ConversionStep({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg border">
-            <pre className="whitespace-pre-wrap text-sm">{viewingResult}</pre>
+            <div className="prose prose-sm max-w-none">
+              <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">{viewingResult}</pre>
+            </div>
           </div>
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setViewingResult(null)}>
