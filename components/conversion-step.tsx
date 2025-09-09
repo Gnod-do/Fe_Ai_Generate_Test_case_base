@@ -55,15 +55,13 @@ export function ConversionStep({
       )
 
       try {
-        const prompt = `Convert the following HTML content to Markdown format:\n\n${file.content}`
-
         const response = await fetch("http://localhost:5678/webhook-test/html-to-md", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            prompt: prompt,
+            content: file.content,
             fileName: file.name,
             fileType: file.type,
             stream: selectedStream,
@@ -130,8 +128,8 @@ export function ConversionStep({
       <CardHeader>
         <CardTitle>Convert to Markdown</CardTitle>
         <CardDescription>
-          Convert your uploaded HTML files to Markdown format for {selectedStream} test case generation. Files will be
-          processed sequentially.
+          Convert your uploaded HTML files to Markdown format for {selectedStream} test case generation. Raw HTML files
+          will be processed sequentially by the server.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -143,7 +141,7 @@ export function ConversionStep({
             >
               {selectedStream.charAt(0).toUpperCase() + selectedStream.slice(1)} Stream
             </Badge>
-            <span className="text-sm text-muted-foreground">Files will be processed sequentially via API</span>
+            <span className="text-sm text-muted-foreground">Raw HTML files will be processed by server</span>
           </div>
         )}
 
