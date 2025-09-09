@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { FileText, Loader2, CheckCircle, AlertCircle, Eye } from "lucide-react"
 import type { UploadedFile, StreamType } from "@/app/page"
 
 interface ConversionStepProps {
@@ -19,6 +19,7 @@ interface ConversionStatus {
   fileId: string
   status: "pending" | "converting" | "completed" | "error"
   error?: string
+  markdownResult?: string
 }
 
 export function ConversionStep({
@@ -29,6 +30,8 @@ export function ConversionStep({
   selectedStream,
 }: ConversionStepProps) {
   const [conversionStatuses, setConversionStatuses] = useState<ConversionStatus[]>([])
+  const [currentFileIndex, setCurrentFileIndex] = useState(0)
+  const [viewingResult, setViewingResult] = useState<string | null>(null)
 
   useEffect(() => {
     setConversionStatuses(
@@ -45,56 +48,79 @@ export function ConversionStep({
     scenario: "Business Scenario",
   }
 
-  const handleConvertFiles = async () => {
-    console.log("[v0] Starting conversion process")
+  const handleConvertCurrentFile = async () => {
+    if (currentFileIndex >= uploadedFiles.length) return
 
-    for (const file of uploadedFiles) {
-      // Update status to converting
-      setConversionStatuses((prev) =>
-        prev.map((status) => (status.fileId === file.id ? { ...status, status: "converting" } : status)),
-      )
+    const file = uploadedFiles[currentFileIndex]
+    console.log("[v0] Converting file:", file.name)
 
-      try {
-        const response = await fetch("http://localhost:5678/webhook-test/html-to-md", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: file.content,
-            fileName: file.name,
-            fileType: file.type,
-            stream: selectedStream,
-          }),
-        })
+    // Update status to converting
+    setConversionStatuses((prev) =>
+      prev.map((status) => (status.fileId === file.id ? { ...status, status: "converting" } : status)),
+    )
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
+    try {
+      const response = await fetch("http://localhost:5678/webhook-test/html-to-md", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: file.content,
+          fileName: file.name,
+          fileType: file.type,
+          stream: selectedStream,
+        }),
+      })
 
-        const result = await response.json()
-        console.log("[v0] Conversion successful for:", file.name)
-
-        // Update status to completed
-        setConversionStatuses((prev) =>
-          prev.map((status) => (status.fileId === file.id ? { ...status, status: "completed" } : status)),
-        )
-      } catch (error) {
-        console.error("[v0] Conversion failed for:", file.name, error)
-
-        // Update status to error
-        setConversionStatuses((prev) =>
-          prev.map((status) =>
-            status.fileId === file.id
-              ? { ...status, status: "error", error: error instanceof Error ? error.message : "Unknown error" }
-              : status,
-          ),
-        )
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    }
 
-    console.log("[v0] All conversions completed")
-    onConvert() // Proceed to next step
+      const result = await response.json()
+      console.log("[v0] Conversion successful for:", file.name)
+
+      // Update status to completed with result
+      setConversionStatuses((prev) =>
+        prev.map((status) =>
+          status.fileId === file.id
+            ? {
+                ...status,
+                status: "completed",
+                markdownResult: result.markdown || result.content || "Conversion completed",
+              }
+            : status,
+        ),
+      )
+    } catch (error) {
+      console.error("[v0] Conversion failed for:", file.name, error)
+
+      // Update status to error
+      setConversionStatuses((prev) =>
+        prev.map((status) =>
+          status.fileId === file.id
+            ? { ...status, status: "error", error: error instanceof Error ? error.message : "Unknown error" }
+            : status,
+        ),
+      )
+    }
+  }
+
+  const handleContinueToNext = () => {
+    if (currentFileIndex < uploadedFiles.length - 1) {
+      setCurrentFileIndex(currentFileIndex + 1)
+      setViewingResult(null)
+    } else {
+      // All files processed, proceed to next step
+      onConvert()
+    }
+  }
+
+  const handleViewResult = (fileId: string) => {
+    const status = conversionStatuses.find((s) => s.fileId === fileId)
+    if (status?.markdownResult) {
+      setViewingResult(status.markdownResult)
+    }
   }
 
   const getStatusIcon = (status: ConversionStatus["status"]) => {
@@ -123,13 +149,39 @@ export function ConversionStep({
     }
   }
 
+  const currentFile = uploadedFiles[currentFileIndex]
+  const currentStatus = conversionStatuses.find((s) => s.fileId === currentFile?.id)
+  const allCompleted = conversionStatuses.every((s) => s.status === "completed")
+  const hasError = conversionStatuses.some((s) => s.status === "error")
+
+  if (viewingResult) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Converted Markdown Result</CardTitle>
+          <CardDescription>Review the converted markdown content</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg border">
+            <pre className="whitespace-pre-wrap text-sm">{viewingResult}</pre>
+          </div>
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setViewingResult(null)}>
+              Back to Conversion
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Convert to Markdown</CardTitle>
         <CardDescription>
-          Convert your uploaded HTML files to Markdown format for {selectedStream} test case generation. Raw HTML files
-          will be processed sequentially by the server.
+          Convert your uploaded HTML files to Markdown format one by one for {selectedStream} test case generation.
+          Progress: {currentFileIndex + 1} of {uploadedFiles.length} files
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -141,17 +193,40 @@ export function ConversionStep({
             >
               {selectedStream.charAt(0).toUpperCase() + selectedStream.slice(1)} Stream
             </Badge>
-            <span className="text-sm text-muted-foreground">Raw HTML files will be processed by server</span>
+            <span className="text-sm text-muted-foreground">Converting files step by step</span>
+          </div>
+        )}
+
+        {currentFile && (
+          <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+            <h3 className="font-medium text-blue-900 mb-2">Currently Processing:</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                {getStatusIcon(currentStatus?.status || "pending")}
+                <div>
+                  <p className="font-medium">{currentFile.name}</p>
+                  <Badge variant="outline">{fileTypeLabels[currentFile.type as keyof typeof fileTypeLabels]}</Badge>
+                </div>
+              </div>
+              <Badge variant="secondary" className={getStatusColor(currentStatus?.status || "pending")}>
+                {currentStatus?.status || "pending"}
+              </Badge>
+            </div>
+            {currentStatus?.error && <p className="text-sm text-red-600 mt-2">{currentStatus.error}</p>}
           </div>
         )}
 
         <div className="space-y-3">
-          <h3 className="font-medium">Files Ready for Conversion</h3>
+          <h3 className="font-medium">All Files Status</h3>
           <div className="grid gap-3">
-            {uploadedFiles.map((file) => {
+            {uploadedFiles.map((file, index) => {
               const status = conversionStatuses.find((s) => s.fileId === file.id)
+              const isCurrent = index === currentFileIndex
               return (
-                <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div
+                  key={file.id}
+                  className={`flex items-center justify-between p-4 border rounded-lg ${isCurrent ? "border-blue-300 bg-blue-50" : ""}`}
+                >
                   <div className="flex items-center space-x-3">
                     {getStatusIcon(status?.status || "pending")}
                     <div>
@@ -163,10 +238,11 @@ export function ConversionStep({
                     <Badge variant="secondary" className={getStatusColor(status?.status || "pending")}>
                       {status?.status || "pending"}
                     </Badge>
-                    {status?.error && (
-                      <span className="text-xs text-red-600 max-w-32 truncate" title={status.error}>
-                        {status.error}
-                      </span>
+                    {status?.status === "completed" && (
+                      <Button variant="outline" size="sm" onClick={() => handleViewResult(file.id)}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Result
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -179,16 +255,28 @@ export function ConversionStep({
           <Button variant="outline" onClick={onBack} disabled={isConverting}>
             Back
           </Button>
-          <Button onClick={handleConvertFiles} disabled={isConverting} className="min-w-32">
-            {isConverting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Converting...
-              </>
+          <div className="space-x-2">
+            {currentStatus?.status === "completed" ? (
+              <Button onClick={handleContinueToNext} className="min-w-32">
+                {currentFileIndex < uploadedFiles.length - 1 ? "Continue to Next File" : "Proceed to Review"}
+              </Button>
             ) : (
-              "Convert to MD"
+              <Button
+                onClick={handleConvertCurrentFile}
+                disabled={isConverting || currentStatus?.status === "converting"}
+                className="min-w-32"
+              >
+                {currentStatus?.status === "converting" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Converting...
+                  </>
+                ) : (
+                  `Convert ${fileTypeLabels[currentFile?.type as keyof typeof fileTypeLabels] || "File"}`
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
