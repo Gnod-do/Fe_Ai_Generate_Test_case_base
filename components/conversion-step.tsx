@@ -85,11 +85,22 @@ export function ConversionStep({
         const base64Data = result.files[0].data
         if (base64Data) {
           try {
-            // Decode base64 to UTF-8
-            markdownContent = atob(base64Data)
+            // Convert base64 to binary string, then to UTF-8
+            const binaryString = atob(base64Data)
+            const bytes = new Uint8Array(binaryString.length)
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i)
+            }
+            markdownContent = new TextDecoder("utf-8").decode(bytes)
           } catch (decodeError) {
             console.error("[v0] Base64 decode error:", decodeError)
-            markdownContent = base64Data // Fallback to original data if decode fails
+            // Fallback: try direct atob if UTF-8 decoding fails
+            try {
+              markdownContent = atob(base64Data)
+            } catch (fallbackError) {
+              console.error("[v0] Fallback decode error:", fallbackError)
+              markdownContent = base64Data // Last resort: show raw data
+            }
           }
         } else {
           markdownContent = "No content received"
