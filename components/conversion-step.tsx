@@ -13,6 +13,7 @@ interface ConversionStepProps {
   onConvert: () => void
   onBack: () => void
   selectedStream: StreamType | null
+  onFileConverted: (fileId: string, convertedContent: string) => void
 }
 
 interface ConversionStatus {
@@ -28,6 +29,7 @@ export function ConversionStep({
   onConvert,
   onBack,
   selectedStream,
+  onFileConverted,
 }: ConversionStepProps) {
   const [conversionStatuses, setConversionStatuses] = useState<ConversionStatus[]>([])
   const [currentFileIndex, setCurrentFileIndex] = useState(0)
@@ -106,6 +108,8 @@ export function ConversionStep({
           markdownContent = "No content received"
         }
       }
+
+      onFileConverted(file.id, markdownContent)
 
       // Update status to completed with result
       setConversionStatuses((prev) =>

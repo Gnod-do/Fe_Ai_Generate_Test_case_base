@@ -41,19 +41,13 @@ export default function TestCaseGenerator() {
   }
 
   const handleConvertToMD = async () => {
-    setIsConverting(true)
-    // Simulate conversion process
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    // Mock conversion - in real app, this would call your backend
-    const convertedFiles = uploadedFiles.map((file) => ({
-      ...file,
-      convertedContent: `# Converted ${file.name}\n\nThis is the markdown version of ${file.name}.\n\n## Content\n\nOriginal HTML content has been converted to markdown format.`,
-    }))
-
-    setUploadedFiles(convertedFiles)
-    setIsConverting(false)
+    // This function now just moves to the conversion step
+    // The actual conversion is handled in the ConversionStep component
     setCurrentStep(3)
+  }
+
+  const handleFileConverted = (fileId: string, convertedContent: string) => {
+    setUploadedFiles((prev) => prev.map((file) => (file.id === fileId ? { ...file, convertedContent } : file)))
   }
 
   const handleConfirmFiles = () => {
@@ -126,6 +120,7 @@ export default function TestCaseGenerator() {
                 onConvert={handleConvertToMD}
                 onBack={() => setCurrentStep(1)}
                 selectedStream={selectedStream}
+                onFileConverted={handleFileConverted}
               />
             )}
 
