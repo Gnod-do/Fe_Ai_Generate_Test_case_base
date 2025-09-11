@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react"
 import type { UploadedFile, StreamType } from "@/app/page"
-import { isDevMode, generateMockMarkdownContent, simulateAsyncOperation } from "@/lib/dev-mode"
+import { isDevMode, generateMockMarkdownContent, generateMockUmlContent, simulateAsyncOperation } from "@/lib/dev-mode"
 
 interface ConversionStatus {
   fileId: string
@@ -45,6 +45,42 @@ export function useConversionLogic(
     }
   }, [currentFileIndex, uploadedFiles, setIsConverting])
 
+  // Function to process UML image and extract text
+  const processUmlImage = async (file: UploadedFile): Promise<string | null> => {
+    try {
+      if (isDevMode()) {
+        // Simulate UML processing delay in dev mode
+        console.log(`🚀 Dev Mode: Mocking UML processing for ${file.name}`)
+        await simulateAsyncOperation(2000) // Longer delay to simulate UML processing
+        return generateMockUmlContent(file.name)
+      }
+      
+      // Real API call
+      const formData = new FormData()
+      
+      // Convert base64 data URL to blob
+      const response = await fetch(file.content)
+      const blob = await response.blob()
+      
+      formData.append('img', blob, file.name)
+      
+      const apiResponse = await fetch('https://img2uml.app.n8n.cloud/webhook-test/bd5a247d-bdb5-47ca-a4b8-308bb9d8460c', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!apiResponse.ok) {
+        throw new Error(`UML API error: ${apiResponse.status}`)
+      }
+      
+      const result = await apiResponse.json()
+      return result.text || null
+    } catch (error) {
+      console.error('Error processing UML image:', error)
+      return null
+    }
+  }
+
   const handleConvertAllFiles = useCallback(async () => {
     if (uploadedFiles.length === 0) return
 
@@ -59,11 +95,54 @@ export function useConversionLogic(
       }))
     )
 
+    // First, process UML image if it exists
+    let umlContent: string | null = null
+    const umlFile = uploadedFiles.find(file => file.type === 'uml-image')
+    if (umlFile) {
+      console.log('Processing UML image:', umlFile.name)
+      setConversionStatuses(prev => 
+        prev.map(status => 
+          status.fileId === umlFile.id 
+            ? { ...status, status: "converting" } 
+            : status
+        )
+      )
+      
+      try {
+        umlContent = await processUmlImage(umlFile)
+        setConversionStatuses(prev => 
+          prev.map(status => 
+            status.fileId === umlFile.id 
+              ? { 
+                  ...status, 
+                  status: "completed", 
+                  markdownResult: umlContent ? `UML Content Extracted:\n\n${umlContent}` : "UML processing completed but no content extracted"
+                } 
+              : status
+          )
+        )
+      } catch (error) {
+        console.error('UML processing failed:', error)
+        setConversionStatuses(prev => 
+          prev.map(status => 
+            status.fileId === umlFile.id 
+              ? { ...status, status: "error", error: error instanceof Error ? error.message : "UML processing failed" } 
+              : status
+          )
+        )
+      }
+    }
+
     for (let i = 0; i < uploadedFiles.length; i++) {
       if (isCancelledRef.current) break
       
       const file = uploadedFiles[i]
       setCurrentFileIndex(i)
+      
+      // Skip UML images as they're already processed
+      if (file.type === 'uml-image') {
+        continue
+      }
       
       setConversionStatuses(prev => 
         prev.map(status => 
@@ -126,6 +205,11 @@ export function useConversionLogic(
         }
 
         if (isCancelledRef.current) break
+
+        // If this is a business requirements file and we have UML content, prepend it
+        if (file.type === 'business' && umlContent) {
+          markdownContent = `# UML Diagram Content\n\n${umlContent}\n\n---\n\n# Business Requirements\n\n${markdownContent}`
+        }
 
         setConversionStatuses((prev) => {
           const updatedStatuses = prev.map((status) =>

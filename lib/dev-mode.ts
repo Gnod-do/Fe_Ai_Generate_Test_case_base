@@ -63,6 +63,49 @@ This mock content simulates the actual conversion process but allows for testing
 *Generated in development mode for testing purposes*`
 }
 
+export const generateMockUmlContent = (fileName: string): string => {
+  return `## System Architecture Overview
+
+### Main Components
+- **User Interface Layer**: Web-based frontend for user interactions
+- **Business Logic Layer**: Core application processing and validation
+- **Data Access Layer**: Database operations and data persistence
+- **Integration Layer**: External API connections and third-party services
+
+### Process Flow
+1. **User Authentication**
+   - Login validation
+   - Session management
+   - Role-based access control
+
+2. **Data Processing Pipeline**
+   - Input validation and sanitization
+   - Business rule application
+   - Data transformation and enrichment
+   - Output generation and formatting
+
+3. **Integration Points**
+   - REST API endpoints for external systems
+   - Database connections for data persistence
+   - Message queue for asynchronous processing
+   - File storage for document management
+
+### Key Relationships
+- Users interact with the UI Layer
+- UI Layer communicates with Business Logic Layer
+- Business Logic Layer accesses Data Layer
+- Integration Layer connects to external systems
+- All layers implement proper error handling and logging
+
+### Technical Specifications
+- **Database**: PostgreSQL for primary data storage
+- **Cache**: Redis for session and temporary data
+- **API**: RESTful services with JSON payloads
+- **Security**: JWT tokens, HTTPS encryption, input validation
+
+*UML diagram extracted from: ${fileName}*`
+}
+
 export const simulateAsyncOperation = async (duration: number = 1000): Promise<void> => {
   return new Promise(resolve => setTimeout(resolve, duration))
 }
