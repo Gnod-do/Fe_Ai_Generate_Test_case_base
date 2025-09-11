@@ -5,9 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { FileText, Download, Trash2, Calendar, CheckSquare, Square, Play } from "lucide-react"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
+import { FileText, Download, Trash2, Calendar } from "lucide-react"
 import type { StreamType } from "@/app/page"
 
 export interface HistoryItem {
@@ -17,26 +15,18 @@ export interface HistoryItem {
   timestamp: number
   type?: string
   stream?: string
-  files?: Array<{
-    originalName: string
-    txtFileName: string
-    content: string
-  }>
-  status?: string
+  csvData?: string // For generated test cases
+  isTestCase?: boolean // Flag to distinguish test cases from documents
+  originalFileCount?: number // Number of files that generated this test case
 }
 
 interface HistoryPanelProps {
   onSelectHistoryItem?: (item: HistoryItem) => void
-  onUseForGeneration?: (items: HistoryItem[], generationType: StreamType) => void
-  onGenerateFromHistory?: (items: HistoryItem[], generationType: StreamType) => void
 }
 
-export function HistoryPanel({ onSelectHistoryItem, onUseForGeneration, onGenerateFromHistory }: HistoryPanelProps) {
+export function HistoryPanel({ onSelectHistoryItem }: HistoryPanelProps) {
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
-  const [selectedForGeneration, setSelectedForGeneration] = useState<Set<string>>(new Set())
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generationType, setGenerationType] = useState<StreamType>("validation")
 
   // Helper function to convert markdown tables to CSV
   const convertMarkdownToCSV = (markdown: string, fileName: string = 'test_cases'): string => {
@@ -213,187 +203,37 @@ export function HistoryPanel({ onSelectHistoryItem, onUseForGeneration, onGenera
     onSelectHistoryItem?.(item)
   }
 
-  const handleToggleForGeneration = (itemId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const newSelected = new Set(selectedForGeneration)
-    if (newSelected.has(itemId)) {
-      newSelected.delete(itemId)
-    } else {
-      newSelected.add(itemId)
-    }
-    setSelectedForGeneration(newSelected)
-  }
 
-  const handleSelectAllForGeneration = () => {
-    if (selectedForGeneration.size === historyItems.length) {
-      setSelectedForGeneration(new Set()) // Deselect all
-    } else {
-      setSelectedForGeneration(new Set(historyItems.map(item => item.id))) // Select all
-    }
-  }
 
-  const handleGenerateFromSelectedItems = async () => {
-    const selectedItems = historyItems.filter(item => selectedForGeneration.has(item.id))
-    if (selectedItems.length === 0) return
-
-    setIsGenerating(true)
-    
-    try {
-      // If we're using business generation type, check if we have required files
-      if (generationType === "business") {
-        const hasBusinessDoc = selectedItems.some(item => item.type === "business");
-        const hasDetailApi = selectedItems.some(item => item.type === "detail-api");
-        
-        if (!hasBusinessDoc || !hasDetailApi) {
-          alert("Business test generation requires at least one Business Document and one Detail API file.");
-          setIsGenerating(false);
-          return;
-        }
-      }
-      
-      // If onGenerateFromHistory is provided, use that instead of direct API calls
-      if (onGenerateFromHistory) {
-        onGenerateFromHistory(selectedItems, generationType);
-        setSelectedForGeneration(new Set());
-        setIsGenerating(false);
-        return;
-      }
-      
-      // Call the generation API for each selected item
-      for (const item of selectedItems) {
-        const endpoint = generationType === "validation" 
-          ? "http://localhost:5678/webhook/generate-test-validate"
-          : "http://localhost:5678/webhook/gen-test-case-bussiness";
-          
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: item.content,
-            fileName: item.fileName,
-            fileType: item.type || "document",
-            stream: generationType,
-            fileId: item.id, // Include file ID for tracking
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        // Handle binary CSV response
-        const contentType = response.headers.get("content-type")
-        if (contentType && (contentType.includes("text/csv") || contentType.includes("application/octet-stream"))) {
-          // Handle as binary data
-          const arrayBuffer = await response.arrayBuffer()
-          const csvData = new TextDecoder('utf-8').decode(arrayBuffer)
-          
-          // Download the CSV file
-          const blob = new Blob([csvData], { type: "text/csv" })
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.href = url
-          a.download = `${item.fileName.replace('.md', '')}_test_cases.csv`
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          window.URL.revokeObjectURL(url)
-        } else {
-          // Handle JSON response or other formats
-          try {
-            const result = await response.json()
-            console.log('Generation result for', item.fileName, result)
-            
-            let csvData = ""
-            
-            // Check if response has direct CSV field
-            if (result.csv) {
-              // Direct CSV response format: { "csv": "csv_content" }
-              csvData = result.csv
-            } else if (Array.isArray(result) && result.length > 0 && result[0].md) {
-              // Process the array format: [{ "md": "data", "file name": ".md" }]
-              const markdownData = result[0].md
-              const fileName = result[0]["file name"] || item.fileName
-              
-              csvData = convertMarkdownToCSV(markdownData, fileName)
-            } else if (result.csvData) {
-              csvData = result.csvData
-            } else if (result.data) {
-              csvData = result.data
-            } else if (result.file) {
-              // If response contains file data as base64 or binary
-              if (typeof result.file === 'string') {
-                try {
-                  // Try to decode as base64 first
-                  csvData = atob(result.file)
-                } catch {
-                  csvData = result.file
-                }
-              }
-            }
-            
-            if (csvData) {
-              const blob = new Blob([csvData], { type: "text/csv" })
-              const url = window.URL.createObjectURL(blob)
-              const a = document.createElement("a")
-              a.href = url
-              a.download = `${item.fileName.replace('.md', '')}_test_cases.csv`
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              window.URL.revokeObjectURL(url)
-            } else {
-              console.warn('No CSV data found in response for', item.fileName)
-            }
-          } catch (jsonError) {
-            // If it's not JSON, try to handle as binary
-            console.log('Response is not JSON, trying to handle as binary CSV')
-            const arrayBuffer = await response.arrayBuffer()
-            const csvData = new TextDecoder('utf-8').decode(arrayBuffer)
-            
-            const blob = new Blob([csvData], { type: "text/csv" })
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = `${item.fileName.replace('.md', '')}_test_cases.csv`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            window.URL.revokeObjectURL(url)
-          }
-        }
-      }
-      
-      // Clear selection after successful generation
-      setSelectedForGeneration(new Set())
-      
-    } catch (error) {
-      console.error("Generation failed:", error)
-      alert(`Generation failed: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const handleUseSelectedForGeneration = () => {
-    const selectedItems = historyItems.filter(item => selectedForGeneration.has(item.id))
-    if (selectedItems.length > 0 && onUseForGeneration) {
-      onUseForGeneration(selectedItems, generationType)
-    }
-  }
 
   const handleDownloadFile = (item: HistoryItem) => {
-    const blob = new Blob([item.content], { type: "text/markdown" })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = item.fileName // File already has .md extension
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
+    if (item.isTestCase && item.csvData) {
+      // For test cases, download CSV with custom filename dialog
+      const fileName = prompt(`Enter filename for ${item.fileName}:`, item.fileName.replace('.csv', '') + '.csv')
+      if (fileName) {
+        const finalFilename = fileName.endsWith('.csv') ? fileName : fileName + '.csv'
+        const blob = new Blob([item.csvData], { type: "text/csv" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = finalFilename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      }
+    } else {
+      // For markdown documents, download as before
+      const blob = new Blob([item.content], { type: "text/markdown" })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = item.fileName // File already has .md extension
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    }
   }
 
   const handleDeleteItem = (itemId: string) => {
@@ -412,9 +252,6 @@ export function HistoryPanel({ onSelectHistoryItem, onUseForGeneration, onGenera
     }
 
     // Remove from generation selection if it was selected
-    const newSelectedForGeneration = new Set(selectedForGeneration)
-    newSelectedForGeneration.delete(itemId)
-    setSelectedForGeneration(newSelectedForGeneration)
   }
 
   const formatTimestamp = (timestamp: number) => {
@@ -449,80 +286,6 @@ export function HistoryPanel({ onSelectHistoryItem, onUseForGeneration, onGenera
           Markdown files from your conversions
         </CardDescription>
         
-        {/* Generation Controls */}
-        {historyItems.length > 0 && (
-          <div className="mt-3 p-2 bg-accent/10 rounded-lg space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium">Generate Test Cases</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSelectAllForGeneration}
-                className="text-xs h-6 px-2"
-              >
-                {selectedForGeneration.size === historyItems.length ? 'Deselect All' : 'Select All'}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Select files to generate test cases ({selectedForGeneration.size} selected)
-            </p>
-            
-            {/* Test Case Generation Type Selection */}
-            <div className="p-2 bg-background/50 rounded-md">
-              <p className="text-xs font-medium mb-2">Test Case Type:</p>
-              <RadioGroup 
-                value={generationType}
-                onValueChange={(value) => setGenerationType(value as StreamType)}
-                className="flex space-x-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="validation" id="validation" />
-                  <Label htmlFor="validation" className="text-xs">Technical Validation</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="business" id="business" />
-                  <Label htmlFor="business" className="text-xs">Business Validation</Label>
-                </div>
-              </RadioGroup>
-              
-              {generationType === "business" && (
-                <p className="text-xs text-amber-600 mt-2">
-                  Note: For Business Test Cases, you need Business Document and Detail API files.
-                </p>
-              )}
-            </div>
-            
-            {selectedForGeneration.size > 0 && (
-              <div className="flex flex-col space-y-1">
-                <Button
-                  onClick={handleGenerateFromSelectedItems}
-                  disabled={isGenerating}
-                  size="sm"
-                  className="w-full h-7 text-xs"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
-                      Generating...
-                    </>
-                  ) : (
-                    `Generate ${generationType === "business" ? "Business" : "Validation"} CSV (${selectedForGeneration.size})`
-                  )}
-                </Button>
-                <Button
-                  onClick={handleUseSelectedForGeneration}
-                  variant="outline"
-                  size="sm"
-                  disabled={isGenerating}
-                  className="w-full h-7 text-xs"
-                >
-                  <Play className="h-3 w-3 mr-1" />
-                  Use in Generation Step
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
       </CardHeader>
       <CardContent className="p-0 flex-1 overflow-hidden">
         <ScrollArea className="h-full">
@@ -556,20 +319,6 @@ export function HistoryPanel({ onSelectHistoryItem, onUseForGeneration, onGenera
                         </Badge>
                       </div>
                       <div className="flex items-center space-x-1 flex-shrink-0">
-                        {/* Checkbox for generation selection */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => handleToggleForGeneration(item.id, e)}
-                          className="h-5 w-5 p-0"
-                          title="Select for generation"
-                        >
-                          {selectedForGeneration.has(item.id) ? (
-                            <CheckSquare className="h-3 w-3 text-primary" />
-                          ) : (
-                            <Square className="h-3 w-3" />
-                          )}
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -578,6 +327,7 @@ export function HistoryPanel({ onSelectHistoryItem, onUseForGeneration, onGenera
                             handleDownloadFile(item)
                           }}
                           className="h-5 w-5 p-0"
+                          title="Download test cases"
                         >
                           <Download className="h-3 w-3" />
                         </Button>

@@ -7,9 +7,11 @@ import { GenerationStep } from "@/components/generation-step"
 import { ProgressIndicator } from "@/components/progress-indicator"
 import { StreamSelectionStep } from "@/components/stream-selection-step"
 import { HistoryPanel, type HistoryItem } from "@/components/history-panel"
+import { DevModeToggle } from "@/components/dev-mode-toggle"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+import { isDevMode, generateMockMarkdownContent, simulateAsyncOperation } from "@/lib/dev-mode"
 export type FileType = "business" | "detail-api" | "api-integration" | "validation" | "error"
 export type StreamType = "business" | "validation"
 
@@ -39,40 +41,55 @@ export default function TestCaseGenerator() {
   const [currentStep, setCurrentStep] = useLocalStorage('currentStep', 0)
   const [selectedStream, setSelectedStream] = useLocalStorage<StreamType | null>('selectedStream', null)
   const [uploadedFiles, setUploadedFiles] = useLocalStorage<UploadedFile[]>('uploadedFiles', [])
+  const [isHydrated, setIsHydrated] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(true)
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryItem | null>(null)
 
-  // Effect to ensure localStorage data is properly loaded on mount
+  // Hydration effect to ensure client-side data is loaded
   useEffect(() => {
-    console.log('=== Main Component Debug Info ===')
-    console.log('Component mounted, checking localStorage...')
-    console.log('Current selectedStream:', selectedStream)
-    console.log('Current currentStep:', currentStep)
+    setIsHydrated(true)
     
+    // Force sync with localStorage on mount
     if (typeof window !== 'undefined') {
-      console.log('Raw localStorage values:')
-      console.log('- selectedStream:', localStorage.getItem('selectedStream'))
-      console.log('- currentStep:', localStorage.getItem('currentStep'))
-    }
-    
-    // Force reload selectedStream if it's null but exists in localStorage
-    if (!selectedStream) {
+      console.log('=== Hydration Debug ===')
       const storedStream = localStorage.getItem('selectedStream')
-      console.log('selectedStream is null, stored value:', storedStream)
-      if (storedStream && storedStream !== 'null') {
+      const storedStep = localStorage.getItem('currentStep')
+      console.log('Raw localStorage - selectedStream:', storedStream)
+      console.log('Raw localStorage - currentStep:', storedStep)
+      
+      // Force update selectedStream if it exists in localStorage but not in state
+      if (storedStream && storedStream !== 'null' && storedStream !== '""' && storedStream !== 'undefined') {
         try {
-          const parsedStream = JSON.parse(storedStream)
-          console.log('Force loading selectedStream from localStorage:', parsedStream)
-          setSelectedStream(parsedStream)
+          const parsedStream = JSON.parse(storedStream) as StreamType
+          console.log('Parsed selectedStream from localStorage:', parsedStream)
+          if (!selectedStream || selectedStream !== parsedStream) {
+            console.log('Updating selectedStream from localStorage:', parsedStream)
+            setSelectedStream(parsedStream)
+          }
         } catch (error) {
           console.error('Error parsing selectedStream from localStorage:', error)
         }
       }
+      
+      // Force update currentStep if it exists in localStorage but not in state
+      if (storedStep && storedStep !== 'null') {
+        try {
+          const parsedStep = parseInt(storedStep)
+          console.log('Parsed currentStep from localStorage:', parsedStep)
+          if (currentStep !== parsedStep) {
+            console.log('Updating currentStep from localStorage:', parsedStep)
+            setCurrentStep(parsedStep)
+          }
+        } catch (error) {
+          console.error('Error parsing currentStep from localStorage:', error)
+        }
+      }
+      
+      console.log('=== End Hydration Debug ===')
     }
-    console.log('=== End Main Component Debug ===')
-  }, [selectedStream, setSelectedStream]) // Add setSelectedStream to dependency array
+  }, []) // Run only once on mount
 
   // Check if all localStorage values have been hydrated
   // Removed isHydrated since hydration flags are no longer returned from useLocalStorage
@@ -139,18 +156,41 @@ export default function TestCaseGenerator() {
   }, [currentStep])
 
   const handleStreamSelected = (stream: StreamType) => {
+    console.log('handleStreamSelected - setting stream:', stream)
     setSelectedStream(stream)
     setCurrentStep(1)
-    localStorage.setItem('selectedStream', stream)
+    // Persist to localStorage immediately
+    localStorage.setItem('selectedStream', JSON.stringify(stream))
     localStorage.setItem('currentStep', '1')
+    console.log('handleStreamSelected - persisted to localStorage:', localStorage.getItem('selectedStream'))
   }
 
   const handleBackToStreamSelection = () => {
     setSelectedStream(null)
     setCurrentStep(0)
-    localStorage.setItem('selectedStream', '')
+    localStorage.removeItem('selectedStream')
     localStorage.setItem('currentStep', '0')
     localStorage.removeItem('uploadedFiles')
+  }
+
+  const handleGenerateNewTestCase = () => {
+    // Reset all state to initial values
+    setSelectedStream(null)
+    setCurrentStep(0)
+    setUploadedFiles([])
+    setIsConverting(false)
+    setIsGenerating(false)
+    setSelectedHistoryItem(null)
+    
+    // Clear all localStorage data
+    localStorage.removeItem('selectedStream')
+    localStorage.removeItem('currentStep')
+    localStorage.removeItem('uploadedFiles')
+    localStorage.removeItem('usingHistoryData')
+    localStorage.setItem('currentStep', '0')
+    
+    // Show success message
+    toast.success("Ready to generate new test cases!")
   }
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
@@ -248,42 +288,60 @@ export default function TestCaseGenerator() {
       )
       localStorage.setItem(storageKey, JSON.stringify(conversionData))
 
-      // Call the conversion API
-      const response = await fetch("http://localhost:5678/webhook/html-to-md", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: fileToRegenerate.content,
-          fileName: fileToRegenerate.name,
-          fileType: fileToRegenerate.type,
-          stream: selectedStream,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
       let markdownContent = "Regeneration completed"
-      
-      if (result.status === "success" && result.files && result.files.length > 0) {
-        const base64Data = result.files[0].data
-        if (base64Data) {
-          try {
-            // Decode base64 to UTF-8
-            const binaryString = atob(base64Data)
-            const bytes = new Uint8Array(binaryString.length)
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i)
+
+      if (isDevMode()) {
+        // Simulate API call delay in dev mode
+        console.log(`🚀 Dev Mode: Mocking regeneration for ${fileToRegenerate.name}`)
+        await simulateAsyncOperation(1200) // Slightly longer for regeneration
+        markdownContent = generateMockMarkdownContent(
+          fileToRegenerate.name, 
+          fileToRegenerate.type, 
+          selectedStream
+        ) + `\n\n---\n*Regenerated at ${new Date().toLocaleTimeString()}*`
+      } else {
+        // Real API call
+        const response = await fetch("http://localhost:5678/webhook/html-to-md", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content: fileToRegenerate.content,
+            fileName: fileToRegenerate.name,
+            fileType: fileToRegenerate.type,
+            stream: selectedStream,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const result = await response.json()
+        
+        if (result.status === "success" && result.files && result.files.length > 0) {
+          const base64Data = result.files[0].data
+          if (base64Data) {
+            try {
+              // Decode base64 to UTF-8
+              const binaryString = atob(base64Data)
+              const bytes = new Uint8Array(binaryString.length)
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i)
+              }
+              markdownContent = new TextDecoder('utf-8').decode(bytes)
+            } catch (decodeError) {
+              console.error("Base64 decode error:", decodeError)
+              markdownContent = base64Data
             }
-            markdownContent = new TextDecoder('utf-8').decode(bytes)
-          } catch (decodeError) {
-            console.error("Base64 decode error:", decodeError)
-            markdownContent = base64Data
           }
+        } else {
+          markdownContent = generateMockMarkdownContent(
+            fileToRegenerate.name, 
+            fileToRegenerate.type, 
+            selectedStream
+          )
         }
       }
 
@@ -452,65 +510,83 @@ export default function TestCaseGenerator() {
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-4xl mx-auto">
               <header className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-foreground mb-2">Test Case Generator</h1>
-                <p className="text-muted-foreground">
-                  Choose your test case stream and convert HTML documents to generate comprehensive test cases
-                </p>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1"></div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Test Case Generator</h1>
+                    <p className="text-muted-foreground">
+                      Choose your test case stream and convert HTML documents to generate comprehensive test cases
+                    </p>
+                  </div>
+                  <div className="flex-1 flex justify-end">
+                    <DevModeToggle />
+                  </div>
+                </div>
               </header>
 
-              {/* Hydration check removed: always render main content */}
-              <ProgressIndicator steps={steps} currentStep={currentStep} />
+              {/* Show loading state until hydrated */}
+              {!isHydrated ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading...</p>
+                </div>
+              ) : (
+                <>
+                  <ProgressIndicator steps={steps} currentStep={currentStep} />
 
-              <div className="mt-8">
-                {currentStep === 0 && (
-                  <StreamSelectionStep onStreamSelected={handleStreamSelected} selectedStream={selectedStream} />
-                )}
+                  <div className="mt-8">
+                    {currentStep === 0 && (
+                      <StreamSelectionStep onStreamSelected={handleStreamSelected} selectedStream={selectedStream} />
+                    )}
 
-                {currentStep === 1 && (
-                  <FileUploadStep
-                    onFilesUploaded={handleFilesUploaded}
-                    onNext={() => setCurrentStep(2)}
-                    onBack={handleBackToStreamSelection}
-                    uploadedFiles={uploadedFiles}
-                    selectedStream={selectedStream}
-                    onDeleteFile={handleDeleteFile}
-                  />
-                )}
+                    {currentStep === 1 && (
+                      <FileUploadStep
+                        onFilesUploaded={handleFilesUploaded}
+                        onNext={() => setCurrentStep(2)}
+                        onBack={handleBackToStreamSelection}
+                        uploadedFiles={uploadedFiles}
+                        selectedStream={selectedStream}
+                        onDeleteFile={handleDeleteFile}
+                      />
+                    )}
 
-                {currentStep === 2 && (
-                  <ConversionReviewStep
-                    uploadedFiles={uploadedFiles}
-                    isConverting={isConverting}
-                    setIsConverting={setIsConverting}
-                    onConvert={handleConvertToMD}
-                    onBack={() => {
-                      setCurrentStep(1)
-                      localStorage.setItem('currentStep', '1')
-                    }}
-                    selectedStream={selectedStream}
-                    onDeleteFile={handleDeleteFile}
-                    onRegenerate={handleRegenerateFile}
-                    onUpdateFiles={updateFilesWithConvertedContent}
-                    onNavigateToStep={(step: number) => {
-                      setCurrentStep(step)
-                      localStorage.setItem('currentStep', step.toString())
-                    }}
-                  />
-                )}
+                    {currentStep === 2 && (
+                      <ConversionReviewStep
+                        uploadedFiles={uploadedFiles}
+                        isConverting={isConverting}
+                        setIsConverting={setIsConverting}
+                        onConvert={handleConvertToMD}
+                        onBack={() => {
+                          setCurrentStep(1)
+                          localStorage.setItem('currentStep', '1')
+                        }}
+                        selectedStream={selectedStream}
+                        onDeleteFile={handleDeleteFile}
+                        onRegenerate={handleRegenerateFile}
+                        onUpdateFiles={updateFilesWithConvertedContent}
+                        onNavigateToStep={(step: number) => {
+                          setCurrentStep(step)
+                          localStorage.setItem('currentStep', step.toString())
+                        }}
+                      />
+                    )}
 
-                {currentStep === 3 && (
-                  <GenerationStep
-                    uploadedFiles={uploadedFiles}
-                    selectedStream={selectedStream}
-                    isGenerating={isGenerating}
-                    onGenerateTestCases={handleGenerateTestCases}
-                    onBack={() => {
-                      setCurrentStep(2)
-                      localStorage.setItem('currentStep', '2')
-                    }}
-                  />
-                )}
-              </div>
+                    {currentStep === 3 && (
+                      <GenerationStep
+                        uploadedFiles={uploadedFiles}
+                        selectedStream={selectedStream}
+                        isGenerating={isGenerating}
+                        onGenerateTestCases={handleGenerateTestCases}
+                        onBack={() => {
+                          setCurrentStep(2)
+                          localStorage.setItem('currentStep', '2')
+                        }}
+                        onGenerateNew={handleGenerateNewTestCase}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

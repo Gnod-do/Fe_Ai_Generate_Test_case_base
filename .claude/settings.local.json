@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for file in ./app/layout.tsx ./app/page.tsx ./components/*.tsx ./lib/*.ts)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(wc:*)",
+      "Bash(done)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/components/**)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/**)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/**)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/**)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/app/**)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/**)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/**)",
+      "Bash(cd:*)",
+      "Bash(npm run build:*)",
+      "Read(/Users/namlimo/Documents/Workspace/**)",
+      "Read(/Users/namlimo/Documents/Workspace/**)",
+      "Read(/Users/namlimo/Documents/Workspace/**)",
+      "Bash(npm run dev:*)",
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
