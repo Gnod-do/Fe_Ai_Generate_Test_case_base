@@ -319,7 +319,7 @@ export default function TestCaseGenerator() {
         // Real API call
         // Real API call with fallback endpoints
         const endpoints = [
-          "https://testcase-gen.app.n8n.cloud/webhook-test/html-to-md",
+          "https://testcase-gen.app.n8n.cloud/webhook/html-to-md",
         ]
 
         let response

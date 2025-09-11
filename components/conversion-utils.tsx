@@ -64,7 +64,7 @@ export function useConversionLogic(
       
       formData.append('img', blob, file.name)
       
-      const apiResponse = await fetch('https://img2uml.app.n8n.cloud/webhook-test/bd5a247d-bdb5-47ca-a4b8-308bb9d8460c', {
+      const apiResponse = await fetch('https://img2uml.app.n8n.cloud/webhook/bd5a247d-bdb5-47ca-a4b8-308bb9d8460c', {
         method: 'POST',
         body: formData
       })
