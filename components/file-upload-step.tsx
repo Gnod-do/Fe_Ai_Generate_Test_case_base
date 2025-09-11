@@ -5,9 +5,9 @@ import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, X, CheckCircle } from "lucide-react"
+import { Upload, FileText, X, CheckCircle, Loader2, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { UploadedFile, StreamType } from "@/app/page"
+import type { UploadedFile, StreamType, FileType } from "@/app/page"
 
 interface FileUploadStepProps {
   onFilesUploaded: (files: UploadedFile[]) => void
@@ -15,26 +15,70 @@ interface FileUploadStepProps {
   onBack: () => void
   uploadedFiles: UploadedFile[]
   selectedStream: StreamType | null
+  onDeleteFile: (fileId: string) => void
 }
 
-const fileBoxes = [
+interface FileBoxConfig {
+  type: FileType;
+  label: string;
+  friendlyName: string;
+  description: string;
+  helpText: string;
+  color: string;
+  icon: string;
+  examples: string;
+  required: boolean;
+  allowMultiple?: boolean;
+}
+
+const businessFileBoxes: FileBoxConfig[] = [
   {
-    type: "scenario" as const,
-    label: "Business Scenario",
-    description: "Upload business scenario HTML files",
+    type: "business",
+    label: "📋 Business Requirements",
+    friendlyName: "Main Documentation",
+    description: "Upload your primary business requirements document",
+    helpText: "This is your main specification document that describes what needs to be tested",
     color: "bg-purple-100 text-purple-800",
+    icon: "📋",
+    examples: "Business requirements, specifications, workflows",
+    required: true
   },
   {
-    type: "api" as const,
-    label: "API Design",
-    description: "Upload API design HTML files",
+    type: "detail-api",
+    label: "🔧 Technical Specifications", 
+    friendlyName: "API Documentation",
+    description: "Upload detailed technical API specifications",
+    helpText: "Upload API documentation that shows endpoints, parameters, and responses",
     color: "bg-blue-100 text-blue-800",
+    icon: "🔧",
+    examples: "API specifications, endpoints, detailed documentation",
+    required: true
   },
   {
-    type: "design" as const,
-    label: "Detailed Design",
-    description: "Upload detailed design HTML files",
+    type: "api-integration",
+    label: "🔗 Integration Guides",
+    friendlyName: "System Integration",
+    description: "Upload API integration documents (optional - multiple files allowed)",
+    helpText: "Additional integration documentation - you can upload multiple files here",
     color: "bg-green-100 text-green-800",
+    icon: "🔗",
+    examples: "Integration guides, API connections, system integration docs",
+    required: false,
+    allowMultiple: true
+  },
+]
+
+const validationFileBoxes: FileBoxConfig[] = [
+  {
+    type: "validation",
+    label: "✅ Validation Document",
+    friendlyName: "Validation Document",
+    description: "Upload a single document for validation test case generation",
+    helpText: "Any document that contains validation rules or data structures to test",
+    color: "bg-orange-100 text-orange-800", 
+    icon: "✅",
+    examples: "Any document for validation testing",
+    required: true
   },
 ]
 
@@ -44,8 +88,16 @@ export function FileUploadStep({
   onBack,
   uploadedFiles,
   selectedStream,
+  onDeleteFile,
 }: FileUploadStepProps) {
   const [dragActive, setDragActive] = useState<string | null>(null)
+  const [removingFileId, setRemovingFileId] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+
+  // Get the appropriate file boxes based on selected stream
+  const currentFileBoxes = selectedStream === "validation" ? validationFileBoxes :
+                          selectedStream === "business" ? businessFileBoxes :
+                          businessFileBoxes // Default to business for any other case
 
   const handleDrag = useCallback((e: React.DragEvent, boxType?: string) => {
     e.preventDefault()
@@ -63,15 +115,30 @@ export function FileUploadStep({
     setDragActive(null)
 
     const files = Array.from(e.dataTransfer.files)
-    handleFiles(files, boxType as "scenario" | "api" | "design")
+    handleFiles(files, boxType as FileType)
   }, [])
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, boxType: "scenario" | "api" | "design") => {
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, boxType: FileType) => {
     const files = Array.from(e.target.files || [])
     handleFiles(files, boxType)
   }
 
-  const handleFiles = async (files: File[], boxType: "scenario" | "api" | "design") => {
+  const handleFiles = async (files: File[], boxType: FileType) => {
+    // For validation stream, only allow one file total
+    if (selectedStream === "validation" && (uploadedFiles.length > 0 || files.length > 1)) {
+      alert("Validation stream only allows one file. Please remove existing files first.")
+      return
+    }
+
+    // For business stream, only allow one file per type (except api-integration which allows multiple)
+    if (selectedStream === "business" && boxType !== "api-integration") {
+      const existingFilesOfType = uploadedFiles.filter(f => f.type === boxType)
+      if (existingFilesOfType.length > 0 || files.length > 1) {
+        alert(`Only one ${boxType} file is allowed. Please remove the existing file first.`)
+        return
+      }
+    }
+
     const newFiles: UploadedFile[] = []
 
     for (const file of files) {
@@ -84,9 +151,22 @@ export function FileUploadStep({
       })
     }
 
-    // Remove existing files of the same type and add new ones
-    const filteredFiles = uploadedFiles.filter((f) => f.type !== boxType)
-    onFilesUploaded([...filteredFiles, ...newFiles])
+    // Preserve existing files and their converted content, but remove files of the same type to replace them
+    // Exception: api-integration allows multiple files
+    const existingMap = new Map(uploadedFiles.map(file => [file.id, file]))
+    const filteredFiles = boxType === "api-integration" 
+      ? uploadedFiles 
+      : uploadedFiles.filter((f) => f.type !== boxType)
+    
+    // Merge preserved files with new files
+    const mergedFiles = [...filteredFiles, ...newFiles].map(file => {
+      const existing = existingMap.get(file.id)
+      return existing?.convertedContent 
+        ? { ...file, convertedContent: existing.convertedContent }
+        : file
+    })
+    
+    onFilesUploaded(mergedFiles)
   }
 
   const readFileContent = (file: File): Promise<string> => {
@@ -98,10 +178,30 @@ export function FileUploadStep({
     })
   }
 
-  const removeFile = (fileId: string) => {
-    console.log("[v0] Removing file with ID:", fileId)
-    const updatedFiles = uploadedFiles.filter((file) => file.id !== fileId)
-    onFilesUploaded(updatedFiles)
+  const removeAllFilesOfType = async (boxType: FileType) => {
+    const filesToRemove = uploadedFiles.filter(file => file.type === boxType)
+    if (filesToRemove.length === 0) return
+    
+    const confirmMessage = `Are you sure you want to remove all ${filesToRemove.length} ${boxType} file${filesToRemove.length > 1 ? 's' : ''}?`
+    if (window.confirm(confirmMessage)) {
+      // Remove all files of this type
+      const remainingFiles = uploadedFiles.filter(file => file.type !== boxType)
+      onFilesUploaded(remainingFiles)
+    }
+  }
+
+  const removeFile = async (fileId: string, fileName: string) => {
+    // Optional: Add confirmation dialog for better UX
+    if (window.confirm(`Are you sure you want to remove "${fileName}"?`)) {
+      setRemovingFileId(fileId)
+      try {
+        // Add a small delay to show loading state
+        await new Promise(resolve => setTimeout(resolve, 300))
+        onDeleteFile(fileId)
+      } finally {
+        setRemovingFileId(null)
+      }
+    }
   }
 
   const getFilesForBox = (boxType: string) => {
@@ -113,13 +213,33 @@ export function FileUploadStep({
       <CardHeader>
         <CardTitle>Upload HTML Documents</CardTitle>
         <CardDescription>
-          Upload your documents for {selectedStream} test case generation. Click on each box to upload the corresponding
-          HTML files.
+          {selectedStream === "validation" 
+            ? "Upload a single HTML document for validation test case generation." 
+            : selectedStream === "business"
+            ? "Upload HTML documents for business test case generation. Business and Detail API documents are required, API Integration documents are optional."
+            : "Upload your documents for test case generation. Choose the correct category for each type of document to optimize test case quality."
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          {fileBoxes.map((box) => {
+        {/* File Type Explanation */}
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">📋 File Categories Guide</h4>
+          <div className="grid gap-2 text-sm">
+            {selectedStream === "business" ? (
+              <>
+                <div><span className="font-medium text-purple-800">📋 Business Document:</span> Business requirements, specifications, and workflows</div>
+                <div><span className="font-medium text-blue-800">🔧 Detail API:</span> Detailed API documentation and specifications</div>
+                <div><span className="font-medium text-green-800">� API Integration:</span> Integration guides and API connection documents (multiple files allowed)</div>
+              </>
+            ) : (
+              <div><span className="font-medium text-orange-800">✅ Validation Document:</span> Any single document for validation test case generation</div>
+            )}
+          </div>
+        </div>
+        
+        <div className={`grid gap-4 ${selectedStream === "validation" ? "md:grid-cols-1 max-w-md mx-auto" : "md:grid-cols-3"}`}>
+          {currentFileBoxes.map((box) => {
             const boxFiles = getFilesForBox(box.type)
             const hasFiles = boxFiles.length > 0
 
@@ -143,12 +263,33 @@ export function FileUploadStep({
                     <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                   )}
                   <div className="space-y-2">
-                    <p className="font-medium">{box.label}</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-2xl">{box.icon}</span>
+                      <p className="font-medium">{box.label}</p>
+                    </div>
                     <p className="text-sm text-muted-foreground">{box.description}</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      Examples: {box.examples}
+                    </p>
                     {hasFiles && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        {boxFiles.length} file{boxFiles.length > 1 ? "s" : ""} uploaded
-                      </Badge>
+                      <div className="flex items-center justify-center gap-2">
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          {boxFiles.length} file{boxFiles.length > 1 ? "s" : ""} uploaded
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            removeAllFilesOfType(box.type)
+                          }}
+                          className="hover:bg-destructive/10 hover:text-destructive text-xs h-6 px-2"
+                          title={`Clear all ${box.label} files`}
+                        >
+                          Clear All
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -156,7 +297,7 @@ export function FileUploadStep({
                 <input
                   id={`file-input-${box.type}`}
                   type="file"
-                  multiple
+                  multiple={selectedStream === "business" && box.type === "api-integration"}
                   accept=".html,.htm"
                   onChange={(e) => handleFileInput(e, box.type)}
                   className="hidden"
@@ -164,32 +305,62 @@ export function FileUploadStep({
 
                 {boxFiles.length > 0 && (
                   <div className="space-y-2">
-                    {boxFiles.map((file) => (
-                      <div key={file.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="truncate">{file.name}</span>
+                    {boxFiles.map((file) => {
+                      const isRemoving = removingFileId === file.id
+                      return (
+                        <div key={file.id} className={cn(
+                          "flex items-start justify-between p-2 bg-muted rounded text-sm transition-opacity gap-2",
+                          isRemoving && "opacity-50"
+                        )}>
+                          <div className="flex items-start space-x-2 min-w-0 flex-1">
+                            <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <span className="break-words leading-5">{file.name}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={isRemoving}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              removeFile(file.id, file.name)
+                            }}
+                            className="hover:bg-destructive/10 hover:text-destructive h-6 w-6 p-0 flex-shrink-0"
+                            title={`Remove ${file.name}`}
+                            aria-label={`Remove ${file.name}`}
+                          >
+                            {isRemoving ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            removeFile(file.id)
-                          }}
-                          className="hover:bg-destructive/10 hover:text-destructive h-6 w-6 p-0"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
             )
           })}
         </div>
+
+        {uploadedFiles.length > 0 && (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (window.confirm(`Are you sure you want to remove all ${uploadedFiles.length} uploaded files?`)) {
+                  onFilesUploaded([])
+                }
+              }}
+              className="hover:bg-destructive/10 hover:text-destructive text-sm"
+            >
+              Clear All Files ({uploadedFiles.length})
+            </Button>
+          </div>
+        )}
 
         <div className="flex justify-between">
           <Button
@@ -202,7 +373,10 @@ export function FileUploadStep({
             Back
           </Button>
           <Button onClick={onNext} disabled={uploadedFiles.length === 0} className="min-w-32">
-            Convert Files
+            {uploadedFiles.length === 0 
+              ? "No Files to Convert" 
+              : `Convert ${uploadedFiles.length} File${uploadedFiles.length > 1 ? 's' : ''}`
+            }
           </Button>
         </div>
       </CardContent>

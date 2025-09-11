@@ -16,20 +16,38 @@ const streamOptions = [
   {
     type: "business" as StreamType,
     title: "Business Test Cases",
-    description: "Generate test cases focused on business logic, user workflows, and functional requirements",
+    description: "Generate comprehensive business test cases from business documents, API details, and integration specs",
     icon: FileCheck,
     color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
     badgeColor: "bg-blue-100 text-blue-800",
-    features: ["User story validation", "Business rule testing", "Workflow verification", "Functional requirements"],
+    features: ["Business document analysis", "API detail testing", "Integration testing", "Multi-document workflow"],
+    requirements: {
+      files: "1-3 files required",
+      types: [
+        { name: "📋 Business Requirements", required: true, description: "Main specification document" },
+        { name: "🔧 Technical Specifications", required: true, description: "API documentation and endpoints" },
+        { name: "🔗 Integration Guides", required: false, description: "System integration docs (optional, multiple allowed)" }
+      ]
+    },
+    workflow: "Multi-document → Convert → Generate business test cases",
+    idealFor: "Complex business applications with multiple APIs and integrations"
   },
   {
     type: "validation" as StreamType,
     title: "Validation Test Cases",
-    description: "Generate test cases focused on data validation, input verification, and error handling",
+    description: "Generate validation test cases from a single document for data validation and input verification",
     icon: Shield,
     color: "bg-green-50 border-green-200 hover:bg-green-100",
     badgeColor: "bg-green-100 text-green-800",
-    features: ["Input validation", "Data integrity checks", "Error handling", "Boundary testing"],
+    features: ["Single file validation", "Input verification", "Data integrity checks", "Quick validation testing"],
+    requirements: {
+      files: "1 file only",
+      types: [
+        { name: "✅ Validation Document", required: true, description: "Any document for validation testing" }
+      ]
+    },
+    workflow: "Single document → Convert → Generate validation test cases",
+    idealFor: "Simple validation scenarios and input verification testing"
   },
 ]
 
@@ -68,6 +86,34 @@ export function StreamSelectionStep({ onStreamSelected, selectedStream }: Stream
                       </Badge>
                     </div>
                     <p className="text-muted-foreground text-sm">{option.description}</p>
+                    
+                    {/* File Requirements */}
+                    <div className="bg-white/50 rounded-md p-3 space-y-2">
+                      <div className="text-xs font-medium text-gray-700">File Requirements:</div>
+                      <div className="text-xs text-blue-600 font-medium">{option.requirements.files}</div>
+                      <div className="space-y-1">
+                        {option.requirements.types.map((fileType, idx) => (
+                          <div key={idx} className="text-xs text-gray-600 flex items-center">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full mr-2 flex-shrink-0" />
+                            <span className="font-medium">{fileType.name}</span>
+                            {fileType.required && <span className="text-red-500 ml-1">*</span>}
+                            <span className="ml-2 text-gray-500">- {fileType.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Workflow */}
+                    <div className="bg-gray-50 rounded-md p-2">
+                      <div className="text-xs font-medium text-gray-700 mb-1">Workflow:</div>
+                      <div className="text-xs text-gray-600">{option.workflow}</div>
+                    </div>
+                    
+                    {/* Ideal For */}
+                    <div className="text-xs text-gray-600">
+                      <span className="font-medium">Best for:</span> {option.idealFor}
+                    </div>
+                    
                     <ul className="space-y-1">
                       {option.features.map((feature, index) => (
                         <li key={index} className="text-sm text-muted-foreground flex items-center">

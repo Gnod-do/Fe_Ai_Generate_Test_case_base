@@ -1,14 +1,19 @@
 import { cn } from "@/lib/utils"
+import { CheckCircle, Clock } from "lucide-react"
 
 interface Step {
   number: number
   title: string
   description: string
+  requirements?: string
+  estimatedTime?: string
+  isCompleted?: boolean
 }
 
 interface ProgressIndicatorProps {
   steps: Step[]
   currentStep: number
+  completedSteps?: number[]
 }
 
 export function ProgressIndicator({ steps, currentStep }: ProgressIndicatorProps) {
