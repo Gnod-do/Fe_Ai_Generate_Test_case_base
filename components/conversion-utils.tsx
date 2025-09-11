@@ -85,7 +85,7 @@ export function useConversionLogic(
           markdownContent = generateMockMarkdownContent(file.name, file.type, selectedStream || 'unknown')
         } else {
           // Real API call
-          const response = await fetch("https://testcase-gen.app.n8n.cloud:5678/webhook/html-to-md", {
+          const response = await fetch("https://testcase-gen.app.n8n.cloud/webhook/html-to-md", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
