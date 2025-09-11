@@ -301,7 +301,7 @@ export default function TestCaseGenerator() {
         ) + `\n\n---\n*Regenerated at ${new Date().toLocaleTimeString()}*`
       } else {
         // Real API call
-        const response = await fetch("http://localhost:5678/webhook/html-to-md", {
+        const response = await fetch("https://testcase-gen.app.n8n.cloud:5678/webhook/html-to-md", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -498,8 +498,6 @@ export default function TestCaseGenerator() {
             <div className="flex-1 overflow-hidden">
               <HistoryPanel 
                 onSelectHistoryItem={handleHistoryItemSelected} 
-                onUseForGeneration={handleUseHistoryForGeneration}
-                onGenerateFromHistory={handleGenerateFromHistory}
               />
             </div>
           )}

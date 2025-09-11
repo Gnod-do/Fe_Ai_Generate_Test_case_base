@@ -158,7 +158,7 @@ TC005,Security test for ${file.name},Malformed input,Secure error handling,High`
           ))
         } else {
           // Real API call
-          const response = await fetch("http://localhost:5678/webhook/generate-test-validate", {
+          const response = await fetch("https://testcase-gen.app.n8n.cloud:5678/webhook/generate-test-validate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -255,7 +255,7 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
           apiIntegration: `${apiIntegrationContent}`
         }
 
-        const response = await fetch("http://localhost:5678/webhook/gen-test-case-bussiness", {
+        const response = await fetch("https://testcase-gen.app.n8n.cloud:5678/webhook/gen-test-case-bussiness", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody),
