@@ -14,6 +14,15 @@ import { toast } from "sonner"
 import { isDevMode, generateMockMarkdownContent, simulateAsyncOperation } from "@/lib/dev-mode"
 export type FileType = "business" | "detail-api" | "api-integration" | "validation" | "uml-image" | "error"
 export type StreamType = "business" | "validation"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 export interface UploadedFile {
   id: string
@@ -51,7 +60,7 @@ export default function TestCaseGenerator() {
   // Hydration effect to ensure client-side data is loaded
   useEffect(() => {
     setIsHydrated(true)
-    
+
     // Force sync with localStorage on mount
     if (typeof window !== 'undefined') {
       console.log('=== Hydration Debug ===')
@@ -59,7 +68,7 @@ export default function TestCaseGenerator() {
       const storedStep = localStorage.getItem('currentStep')
       console.log('Raw localStorage - selectedStream:', storedStream)
       console.log('Raw localStorage - currentStep:', storedStep)
-      
+
       // Force update selectedStream if it exists in localStorage but not in state
       if (storedStream && storedStream !== 'null' && storedStream !== '""' && storedStream !== 'undefined') {
         try {
@@ -73,7 +82,7 @@ export default function TestCaseGenerator() {
           console.error('Error parsing selectedStream from localStorage:', error)
         }
       }
-      
+
       // Force update currentStep if it exists in localStorage but not in state
       if (storedStep && storedStep !== 'null') {
         try {
@@ -87,7 +96,7 @@ export default function TestCaseGenerator() {
           console.error('Error parsing currentStep from localStorage:', error)
         }
       }
-      
+
       console.log('=== End Hydration Debug ===')
     }
   }, []) // Run only once on mount
@@ -118,7 +127,7 @@ export default function TestCaseGenerator() {
     if (currentStep === 3) {
       console.log('Entering step 3, checking for history data...')
       console.log('Current selectedStream:', selectedStream)
-      
+
       // Ensure selectedStream is loaded from localStorage if not already set
       if (!selectedStream) {
         console.log('selectedStream is null, attempting to load from localStorage...')
@@ -133,12 +142,12 @@ export default function TestCaseGenerator() {
           }
         }
       }
-      
+
       // Check if we're using history data
       const usingHistoryData = localStorage.getItem('usingHistoryData')
       if (usingHistoryData === 'true') {
         console.log('Loading files from localStorage for history data...')
-        
+
         try {
           const storedFiles = localStorage.getItem('uploadedFiles')
           if (storedFiles) {
@@ -149,7 +158,7 @@ export default function TestCaseGenerator() {
         } catch (error) {
           console.error('Error loading files from localStorage:', error)
         }
-        
+
         // Clear the flag
         localStorage.removeItem('usingHistoryData')
       }
@@ -182,14 +191,14 @@ export default function TestCaseGenerator() {
     setIsConverting(false)
     setIsGenerating(false)
     setSelectedHistoryItem(null)
-    
+
     // Clear all localStorage data
     localStorage.removeItem('selectedStream')
     localStorage.removeItem('currentStep')
     localStorage.removeItem('uploadedFiles')
     localStorage.removeItem('usingHistoryData')
     localStorage.setItem('currentStep', '0')
-    
+
     // Show success message
     toast.success("Ready to generate new test cases!")
   }
@@ -222,7 +231,7 @@ export default function TestCaseGenerator() {
     try {
       const storageKey = `conversion-data-${selectedStream}`
       const storedData = localStorage.getItem(storageKey)
-      
+
       if (storedData) {
         const data: ConversionData = JSON.parse(storedData)
         if (data.statuses && data.statuses.length > 0) {
@@ -241,7 +250,7 @@ export default function TestCaseGenerator() {
             }
             return file
           })
-          
+
           // Only update state if there are actual changes
           if (hasChanges) {
             console.log('Syncing converted content from localStorage:', updatedFiles.filter(f => f.convertedContent).length, 'files')
@@ -261,9 +270,9 @@ export default function TestCaseGenerator() {
 
   const handleRegenerateFile = async (fileId: string) => {
     if (!selectedStream) return
-    
+
     setIsConverting(true)
-    
+
     try {
       // Find the file to regenerate
       const fileToRegenerate = uploadedFiles.find(f => f.id === fileId)
@@ -291,14 +300,14 @@ export default function TestCaseGenerator() {
       const storageKey = `conversion-data-${selectedStream}`
       const storedData = localStorage.getItem(storageKey)
       let conversionData: ConversionData = { statuses: [], currentIndex: 0 }
-      
+
       if (storedData) {
         conversionData = JSON.parse(storedData)
       }
 
       // Update status to converting
       conversionData.statuses = conversionData.statuses.map((status: ConversionStatus) =>
-        status.fileId === fileId 
+        status.fileId === fileId
           ? { ...status, status: "converting", error: undefined }
           : status
       )
@@ -311,8 +320,8 @@ export default function TestCaseGenerator() {
         console.log(`🚀 Dev Mode: Mocking regeneration for ${fileToRegenerate.name}`)
         await simulateAsyncOperation(1200) // Slightly longer for regeneration
         markdownContent = generateMockMarkdownContent(
-          fileToRegenerate.name, 
-          fileToRegenerate.type, 
+          fileToRegenerate.name,
+          fileToRegenerate.type,
           selectedStream
         ) + `\n\n---\n*Regenerated at ${new Date().toLocaleTimeString()}*`
       } else {
@@ -324,7 +333,7 @@ export default function TestCaseGenerator() {
 
         let response
         let lastError
-        
+
         for (const endpoint of endpoints) {
           try {
             console.log('Making API request to:', endpoint)
@@ -387,7 +396,7 @@ export default function TestCaseGenerator() {
           console.error('Raw response:', responseText)
           throw new Error(`Invalid JSON response: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}`)
         }
-        
+
         if (result.status === "success" && result.files && result.files.length > 0) {
           const base64Data = result.files[0].data
           if (base64Data) {
@@ -399,13 +408,13 @@ export default function TestCaseGenerator() {
                 bytes[i] = binaryString.charCodeAt(i)
               }
               markdownContent = new TextDecoder('utf-8').decode(bytes)
-              
+
               // Validate that we got actual content
               if (!markdownContent || markdownContent.trim() === '') {
                 console.warn('API returned empty content, using fallback')
                 markdownContent = generateMockMarkdownContent(
-                  fileToRegenerate.name, 
-                  fileToRegenerate.type, 
+                  fileToRegenerate.name,
+                  fileToRegenerate.type,
                   selectedStream
                 ) + `\n\n---\n*API returned empty content - using fallback at ${new Date().toLocaleTimeString()}*`
               }
@@ -417,8 +426,8 @@ export default function TestCaseGenerator() {
           } else {
             console.warn('API response missing data field, using fallback')
             markdownContent = generateMockMarkdownContent(
-              fileToRegenerate.name, 
-              fileToRegenerate.type, 
+              fileToRegenerate.name,
+              fileToRegenerate.type,
               selectedStream
             ) + `\n\n---\n*API response missing data - using fallback at ${new Date().toLocaleTimeString()}*`
           }
@@ -427,8 +436,8 @@ export default function TestCaseGenerator() {
           console.log('Result status:', result?.status)
           console.log('Result files:', result?.files)
           markdownContent = generateMockMarkdownContent(
-            fileToRegenerate.name, 
-            fileToRegenerate.type, 
+            fileToRegenerate.name,
+            fileToRegenerate.type,
             selectedStream
           ) + `\n\n---\n*API response not successful - using fallback at ${new Date().toLocaleTimeString()}*`
         }
@@ -439,7 +448,7 @@ export default function TestCaseGenerator() {
 
       // Update conversion status with new result
       conversionData.statuses = conversionData.statuses.map((status: ConversionStatus) =>
-        status.fileId === fileId 
+        status.fileId === fileId
           ? { ...status, status: "completed", markdownResult: markdownContent, error: undefined }
           : status
       )
@@ -455,7 +464,7 @@ export default function TestCaseGenerator() {
 
     } catch (error) {
       console.error("Regeneration failed:", error)
-      
+
       let errorMessage = "Unknown error"
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -466,17 +475,17 @@ export default function TestCaseGenerator() {
           errorMessage = error.message
         }
       }
-      
+
       // Show user-friendly error message
       toast.error(`Regeneration failed: ${errorMessage}`)
-      
+
       // Update status to error
       const storageKey = `conversion-data-${selectedStream}`
       const storedData = localStorage.getItem(storageKey)
       if (storedData) {
         const conversionData: ConversionData = JSON.parse(storedData)
         conversionData.statuses = conversionData.statuses.map((status: ConversionStatus) =>
-          status.fileId === fileId 
+          status.fileId === fileId
             ? { ...status, status: "error", error: error instanceof Error ? error.message : "Unknown error" }
             : status
         )
@@ -490,7 +499,7 @@ export default function TestCaseGenerator() {
   const handleDeleteFile = (fileId: string) => {
     const updatedFiles = uploadedFiles.filter(file => file.id !== fileId)
     setUploadedFiles(updatedFiles)
-    
+
     // Clean up conversion statuses from localStorage
     if (selectedStream) {
       const storageKey = `conversion-data-${selectedStream}`
@@ -521,11 +530,11 @@ export default function TestCaseGenerator() {
     setSelectedHistoryItem(item)
   }
 
-    const handleUseHistoryForGeneration = (items: HistoryItem[], generationType: StreamType) => {
+  const handleUseHistoryForGeneration = (items: HistoryItem[], generationType: StreamType) => {
     if (items.length === 0) return
-    
+
     console.log(`Using history items for ${generationType} test generation:`, items)
-    
+
     try {
       // Convert history items to uploadedFiles format
       const filesFromHistory: UploadedFile[] = items.map(item => ({
@@ -535,20 +544,20 @@ export default function TestCaseGenerator() {
         content: item.content,
         convertedContent: item.content // Use content directly since it's already in Markdown
       }))
-      
+
       // Set the selected stream and uploaded files
       setSelectedStream(generationType)
       setUploadedFiles(filesFromHistory)
-      
+
       // Set flag so the step 3 effect knows to reload files
       localStorage.setItem('usingHistoryData', 'true')
       localStorage.setItem('selectedStream', generationType)
       localStorage.setItem('uploadedFiles', JSON.stringify(filesFromHistory))
-      
+
       // Move to the generation step
       setCurrentStep(3)
       localStorage.setItem('currentStep', '3')
-      
+
       // Show a notification
       console.log(`${filesFromHistory.length} file(s) loaded for ${generationType === "validation" ? "Technical Validation" : "Business Validation"} test generation`)
     } catch (error) {
@@ -556,23 +565,23 @@ export default function TestCaseGenerator() {
     }
   }
 
-    const handleGenerateFromHistory = async (items: HistoryItem[], generationType: StreamType) => {
+  const handleGenerateFromHistory = async (items: HistoryItem[], generationType: StreamType) => {
     console.log(`Generate ${generationType} test cases from history:`, items)
-    
+
     // Check if we have the required files for business flow
     if (generationType === "business") {
       const hasBusinessDoc = items.some(item => item.type === "business");
       const hasDetailApi = items.some(item => item.type === "detail-api");
-      
+
       if (!hasBusinessDoc || !hasDetailApi) {
         console.error("Business test generation requires at least one Business Document and one Detail API file.");
         return;
       }
     }
-    
+
     // Here you would call the API to generate test cases from history items
     // based on the selected generation type
-    
+
     // For now, we simulate a successful generation
     console.log(`Successfully generated ${generationType} test cases for ${items.length} file(s)`);
   }
@@ -602,8 +611,8 @@ export default function TestCaseGenerator() {
           </div>
           {isHistoryOpen && (
             <div className="flex-1 overflow-hidden">
-              <HistoryPanel 
-                onSelectHistoryItem={handleHistoryItemSelected} 
+              <HistoryPanel
+                onSelectHistoryItem={handleHistoryItemSelected}
               />
             </div>
           )}
@@ -623,6 +632,42 @@ export default function TestCaseGenerator() {
                     </p>
                   </div>
                   <div className="flex-1 flex justify-end">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Instruction</Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>How to use this page</DialogTitle>
+                        </DialogHeader>
+
+                        {/* Nội dung mẫu — bạn sửa tuỳ ý */}
+                        <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
+                          <ol className="list-decimal pl-5 space-y-2">
+                            <li><strong>Select Stream</strong>: chọn loại test case (Business / Validation).</li>
+                            <li><strong>Upload Files</strong>: tải lên các tài liệu HTML liên quan.</li>
+                            <li><strong>Convert & Review</strong>: chuyển đổi sang Markdown, xem lại và tái tạo khi cần.</li>
+                            <li><strong>Generate</strong>: tạo test cases dựa trên nội dung đã duyệt.</li>
+                          </ol>
+
+                          <h4 className="font-semibold mt-4">Tips</h4>
+                          <ul className="list-disc pl-5 space-y-1">
+                            <li>Có thể mở panel History để tái sử dụng tài liệu cũ.</li>
+                            <li>Dev Mode hỗ trợ mock nội dung khi chưa gọi API thực.</li>
+                            <li>Dữ liệu bước/stream được lưu trong <code>localStorage</code> để bạn tiếp tục sau.</li>
+                          </ul>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <DialogClose asChild>
+                            <Button type="button" variant="default">
+                              Got it
+                            </Button>
+                          </DialogClose>
+                        </div>
+
+                      </DialogContent>
+                    </Dialog>
                     <DevModeToggle />
                   </div>
                 </div>
