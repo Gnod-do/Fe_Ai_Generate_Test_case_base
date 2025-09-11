@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import { isDevMode, generateMockMarkdownContent, simulateAsyncOperation } from "@/lib/dev-mode"
-export type FileType = "business" | "detail-api" | "api-integration" | "validation" | "error"
+export type FileType = "business" | "detail-api" | "api-integration" | "validation" | "uml-image" | "error"
 export type StreamType = "business" | "validation"
 
 export interface UploadedFile {
@@ -21,6 +21,7 @@ export interface UploadedFile {
   type: FileType
   content: string
   convertedContent?: string
+  umlContent?: string
 }
 
 interface ConversionStatus {

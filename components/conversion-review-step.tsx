@@ -159,7 +159,7 @@ export function ConversionReviewStep({
   const handleUploadToHistory = () => {
     const completedFiles = uploadedFiles.filter(file => {
       const status = conversionStatuses.find(s => s.fileId === file.id)
-      return status?.status === "completed" && status.markdownResult
+      return status?.status === "completed" && status.markdownResult && file.type !== "uml-image"
     })
 
     if (completedFiles.length === 0) {
@@ -214,6 +214,7 @@ export function ConversionReviewStep({
     "detail-api": "🔧 Technical Specifications", 
     "api-integration": "🔗 Integration Guides",
     "validation": "✅ Validation Document",
+    "uml-image": "🖼️ UML Image",
     "error": "❌ Error"
   }
 
@@ -227,7 +228,7 @@ export function ConversionReviewStep({
   const hasAnyConvertedFiles = () => {
     return uploadedFiles.some(file => {
       const status = conversionStatuses.find(s => s.fileId === file.id)
-      return status?.status === "completed" && status.markdownResult
+      return status?.status === "completed" && status.markdownResult && file.type !== "uml-image"
     })
   }
 
@@ -396,7 +397,7 @@ export function ConversionReviewStep({
                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
                   {uploadedFiles.filter(file => {
                     const status = conversionStatuses.find(s => s.fileId === file.id)
-                    return status?.status === "completed"
+                    return status?.status === "completed" && file.type !== "uml-image"
                   }).map((file) => (
                     <div
                       key={file.id}

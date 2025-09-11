@@ -66,6 +66,17 @@ const businessFileBoxes: FileBoxConfig[] = [
     required: false,
     allowMultiple: true
   },
+  {
+    type: "uml-image",
+    label: "🖼️ UML Image",
+    friendlyName: "UML Diagram",
+    description: "Upload a UML diagram image (optional)",
+    helpText: "Upload a UML diagram that will be processed and added to your business requirements",
+    color: "bg-yellow-100 text-yellow-800",
+    icon: "🖼️",
+    examples: "UML diagrams, flowcharts, system diagrams",
+    required: false
+  },
 ]
 
 const validationFileBoxes: FileBoxConfig[] = [
@@ -174,7 +185,13 @@ export function FileUploadStep({
       const reader = new FileReader()
       reader.onload = (e) => resolve(e.target?.result as string)
       reader.onerror = reject
-      reader.readAsText(file)
+      
+      // For image files, read as data URL (base64)
+      if (file.type.startsWith('image/')) {
+        reader.readAsDataURL(file)
+      } else {
+        reader.readAsText(file)
+      }
     })
   }
 
@@ -216,7 +233,7 @@ export function FileUploadStep({
           {selectedStream === "validation" 
             ? "Upload a single HTML document for validation test case generation." 
             : selectedStream === "business"
-            ? "Upload HTML documents for business test case generation. Business and Detail API documents are required, API Integration documents are optional."
+            ? "Upload HTML documents for business test case generation. Business and Detail API documents are required, API Integration and UML Image documents are optional."
             : "Upload your documents for test case generation. Choose the correct category for each type of document to optimize test case quality."
           }
         </CardDescription>
@@ -230,7 +247,8 @@ export function FileUploadStep({
               <>
                 <div><span className="font-medium text-purple-800">📋 Business Document:</span> Business requirements, specifications, and workflows</div>
                 <div><span className="font-medium text-blue-800">🔧 Detail API:</span> Detailed API documentation and specifications</div>
-                <div><span className="font-medium text-green-800">� API Integration:</span> Integration guides and API connection documents (multiple files allowed)</div>
+                <div><span className="font-medium text-green-800">🔗 API Integration:</span> Integration guides and API connection documents (multiple files allowed)</div>
+                <div><span className="font-medium text-yellow-800">🖼️ UML Image:</span> UML diagrams that will be processed and added to business requirements</div>
               </>
             ) : (
               <div><span className="font-medium text-orange-800">✅ Validation Document:</span> Any single document for validation test case generation</div>
@@ -298,7 +316,7 @@ export function FileUploadStep({
                   id={`file-input-${box.type}`}
                   type="file"
                   multiple={selectedStream === "business" && box.type === "api-integration"}
-                  accept=".html,.htm"
+                  accept={box.type === "uml-image" ? ".png,.jpg,.jpeg,.gif,.bmp,.svg" : ".html,.htm"}
                   onChange={(e) => handleFileInput(e, box.type)}
                   className="hidden"
                 />
