@@ -269,6 +269,21 @@ export default function TestCaseGenerator() {
       const fileToRegenerate = uploadedFiles.find(f => f.id === fileId)
       if (!fileToRegenerate) {
         console.error('File not found for regeneration:', fileId)
+        toast.error('File not found for regeneration')
+        return
+      }
+
+      // Validate file content
+      if (!fileToRegenerate.content || fileToRegenerate.content.trim() === '') {
+        console.error('File content is empty:', fileToRegenerate.name)
+        toast.error('Cannot regenerate: File content is empty')
+        return
+      }
+
+      // Validate selected stream
+      if (!selectedStream) {
+        console.error('No stream selected for regeneration')
+        toast.error('Cannot regenerate: No stream selected')
         return
       }
 
@@ -302,24 +317,76 @@ export default function TestCaseGenerator() {
         ) + `\n\n---\n*Regenerated at ${new Date().toLocaleTimeString()}*`
       } else {
         // Real API call
-        const response = await fetch("https://testcase-gen.app.n8n.cloud/webhook/html-to-md", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: fileToRegenerate.content,
-            fileName: fileToRegenerate.name,
-            fileType: fileToRegenerate.type,
-            stream: selectedStream,
-          }),
-        })
+        // Real API call with fallback endpoints
+        const endpoints = [
+          "https://testcase-gen.app.n8n.cloud/webhook-test/html-to-md",
+        ]
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+        let response
+        let lastError
+        
+        for (const endpoint of endpoints) {
+          try {
+            console.log('Making API request to:', endpoint)
+            console.log('Request payload:', {
+              fileName: fileToRegenerate.name,
+              fileType: fileToRegenerate.type,
+              stream: selectedStream,
+              contentLength: fileToRegenerate.content?.length
+            })
+
+            // Add timeout to fetch request
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+            response = await fetch(endpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+              },
+              body: JSON.stringify({
+                content: fileToRegenerate.content,
+                fileName: fileToRegenerate.name,
+                fileType: fileToRegenerate.type,
+                stream: selectedStream,
+              }),
+              signal: controller.signal,
+            })
+
+            clearTimeout(timeoutId)
+
+            console.log('Response status:', response.status)
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
+            if (response.ok) {
+              break // Success, exit the loop
+            } else {
+              const errorText = await response.text()
+              console.error(`API Error Response from ${endpoint}:`, errorText)
+              lastError = new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
+            }
+          } catch (error) {
+            console.error(`Error with endpoint ${endpoint}:`, error)
+            lastError = error
+            continue // Try next endpoint
+          }
         }
 
-        const result = await response.json()
+        if (!response || !response.ok) {
+          throw lastError || new Error('All API endpoints failed')
+        }
+
+        let result
+        try {
+          result = await response.json()
+          console.log('API Response:', result)
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response:', jsonError)
+          const responseText = await response.text()
+          console.error('Raw response:', responseText)
+          throw new Error(`Invalid JSON response: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}`)
+        }
         
         if (result.status === "success" && result.files && result.files.length > 0) {
           const base64Data = result.files[0].data
@@ -332,19 +399,43 @@ export default function TestCaseGenerator() {
                 bytes[i] = binaryString.charCodeAt(i)
               }
               markdownContent = new TextDecoder('utf-8').decode(bytes)
+              
+              // Validate that we got actual content
+              if (!markdownContent || markdownContent.trim() === '') {
+                console.warn('API returned empty content, using fallback')
+                markdownContent = generateMockMarkdownContent(
+                  fileToRegenerate.name, 
+                  fileToRegenerate.type, 
+                  selectedStream
+                ) + `\n\n---\n*API returned empty content - using fallback at ${new Date().toLocaleTimeString()}*`
+              }
             } catch (decodeError) {
               console.error("Base64 decode error:", decodeError)
+              // If base64 decode fails, try using the raw data
               markdownContent = base64Data
             }
+          } else {
+            console.warn('API response missing data field, using fallback')
+            markdownContent = generateMockMarkdownContent(
+              fileToRegenerate.name, 
+              fileToRegenerate.type, 
+              selectedStream
+            ) + `\n\n---\n*API response missing data - using fallback at ${new Date().toLocaleTimeString()}*`
           }
         } else {
+          console.warn('API response not successful or missing files, using fallback')
+          console.log('Result status:', result?.status)
+          console.log('Result files:', result?.files)
           markdownContent = generateMockMarkdownContent(
             fileToRegenerate.name, 
             fileToRegenerate.type, 
             selectedStream
-          )
+          ) + `\n\n---\n*API response not successful - using fallback at ${new Date().toLocaleTimeString()}*`
         }
       }
+
+      // Show success message to user
+      toast.success(`File "${fileToRegenerate.name}" regenerated successfully`)
 
       // Update conversion status with new result
       conversionData.statuses = conversionData.statuses.map((status: ConversionStatus) =>
@@ -364,6 +455,20 @@ export default function TestCaseGenerator() {
 
     } catch (error) {
       console.error("Regeneration failed:", error)
+      
+      let errorMessage = "Unknown error"
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Request timeout - please try again"
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Network error - check your connection"
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      // Show user-friendly error message
+      toast.error(`Regeneration failed: ${errorMessage}`)
       
       // Update status to error
       const storageKey = `conversion-data-${selectedStream}`
