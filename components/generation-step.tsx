@@ -158,7 +158,7 @@ TC005,Security test for ${file.name},Malformed input,Secure error handling,High`
           ))
         } else {
           // Real API call
-          const response = await fetch("https://testcase-gen.app.n8n.cloud/webhook/generate-test-validate", {
+          const response = await fetch("https://ccc6d7501344.ngrok-free.app/webhook/generate-test-validate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -255,7 +255,7 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
           apiIntegration: `${apiIntegrationContent}`
         }
 
-        const response = await fetch("https://testcase-gen.app.n8n.cloud/webhook/gen-test-case-bussiness", {
+        const response = await fetch("https://ccc6d7501344.ngrok-free.app/webhook/gen-test-case-bussiness", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody),
@@ -412,6 +412,85 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
     setPendingDownload(null)
   }
 
+  const handleRegenerateFile = async (fileId: string) => {
+    if (!effectiveStream) return
+    
+    if (effectiveStream === "business" && fileId === "business-combined") {
+      // Regenerate business test cases
+      setGenerationResults([])
+      setCurrentGeneratingIndex(0)
+      await processBusinessFiles(abortController || undefined)
+    } else {
+      // Regenerate individual validation file
+      const file = filesWithContent.find(f => f.id === fileId)
+      if (!file) return
+      
+      setGenerationResults(prev => prev.map(result => 
+        result.fileId === fileId 
+          ? { ...result, status: "generating", csvData: undefined, error: undefined }
+          : result
+      ))
+      
+      const fileIndex = filesWithContent.findIndex(f => f.id === fileId)
+      setCurrentGeneratingIndex(fileIndex)
+      
+      try {
+        if (isDevMode()) {
+          // Mock API response in dev mode
+          console.log(`🚀 Dev Mode: Mocking regeneration for ${file.name}`)
+          await simulateAsyncOperation(1500)
+          
+          const mockCsvData = `Test Case ID,Description,Input,Expected Output,Priority
+TC001,Regenerated valid input test for ${file.name},Sample input data,Success response,High
+TC002,Regenerated invalid input test for ${file.name},Invalid data,Error response,Medium
+TC003,Regenerated edge case test for ${file.name},Boundary values,Handled gracefully,Low
+TC004,Regenerated performance test for ${file.name},Large dataset,Response within 2s,Medium
+TC005,Regenerated security test for ${file.name},Malformed input,Secure error handling,High`
+          
+          setGenerationResults(prev => prev.map(result => 
+            result.fileId === fileId 
+              ? { ...result, status: "completed", csvData: mockCsvData }
+              : result
+          ))
+        } else {
+          // Real API call
+          const response = await fetch("https://ccc6d7501344.ngrok-free.app/webhook/generate-test-validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: file.convertedContent,
+              fileName: file.name,
+              fileType: file.type,
+              stream: effectiveStream,
+              fileId: file.id,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+
+          await handleValidationResponse(response, file)
+        }
+
+      } catch (error) {
+        console.error("Regeneration failed for file:", file.name, error)
+        
+        setGenerationResults(prev => prev.map(result => 
+          result.fileId === fileId 
+            ? { 
+                ...result, 
+                status: "error", 
+                error: error instanceof Error ? error.message : "Unknown error" 
+              }
+            : result
+        ))
+      } finally {
+        setCurrentGeneratingIndex(-1)
+      }
+    }
+  }
+
 
   const progressPercentage = generationResults.length > 0 
     ? (generationResults.filter(r => r.status === "completed" || r.status === "error").length / generationResults.length) * 100
@@ -531,6 +610,28 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
                 )}
               </Button>
               
+              {/* Always show regenerate button when there are completed results */}
+              {generationResults.some(r => r.status === "completed") && !isGenerating && (
+                <Button
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      `Are you sure you want to regenerate all ${effectiveStream === "business" ? "business" : "validation"} test cases? This will overwrite your current results.`
+                    )
+                    if (confirmed) {
+                      setGenerationResults([])
+                      handleGenerateTestCases()
+                    }
+                  }}
+                  variant="outline"
+                  size="default"
+                  className="min-w-[140px]"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Regenerate All
+                </Button>
+              )}
+              
+              {/* Cancel button during generation */}
               {isGenerating && (
                 <Button
                   onClick={handleCancelGeneration}
@@ -595,6 +696,7 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
             onModifyFile={onModifyFile}
             onRemoveFile={onRemoveFile}
             onDownloadCSV={handleDownloadCSV}
+            onRegenerateFile={handleRegenerateFile}
           />
 
           <div className="flex justify-between pt-4 border-t">

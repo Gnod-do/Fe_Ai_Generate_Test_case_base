@@ -18,7 +18,9 @@
       "Read(/Users/namlimo/Documents/Workspace/**)",
       "Read(/Users/namlimo/Documents/Workspace/**)",
       "Bash(npm run dev:*)",
-      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/**)"
+      "Read(/Users/namlimo/Documents/Workspace/AI ứng dụng/**)",
+      "Read(//Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/components/**)",
+      "Read(//Users/namlimo/Documents/Workspace/AI ứng dụng/Fe_Ai_Generate_Test_case_base/app/**)"
     ],
     "deny": [],
     "ask": []

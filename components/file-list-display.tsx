@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { FileText, Download, CheckCircle, AlertCircle, Clock, Edit, Trash2 } from "lucide-react"
+import { FileText, Download, CheckCircle, AlertCircle, Clock, Edit, Trash2, RotateCcw } from "lucide-react"
 import type { UploadedFile, StreamType } from "@/app/page"
 
 interface GenerationResult {
@@ -23,6 +23,7 @@ interface FileListDisplayProps {
   onModifyFile?: (fileId: string) => void
   onRemoveFile?: (fileId: string) => void
   onDownloadCSV: (result: GenerationResult) => void
+  onRegenerateFile?: (fileId: string) => void
 }
 
 export function FileListDisplay({
@@ -33,7 +34,8 @@ export function FileListDisplay({
   isGenerating,
   onModifyFile,
   onRemoveFile,
-  onDownloadCSV
+  onDownloadCSV,
+  onRegenerateFile
 }: FileListDisplayProps) {
   const filesWithContent = uploadedFiles.filter(file => file.convertedContent)
 
@@ -87,14 +89,35 @@ export function FileListDisplay({
                     {getStatusIcon(generationResults[0].status)}
                     <span className="text-sm">{getStatusText(generationResults[0].status)}</span>
                     {generationResults[0].status === "completed" && generationResults[0].csvData && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDownloadCSV(generationResults[0])}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDownloadCSV(generationResults[0])}
+                          className="h-6 w-6 p-0"
+                          title="Download CSV"
+                        >
+                          <Download className="h-3 w-3" />
+                        </Button>
+                        {onRegenerateFile && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const confirmed = window.confirm(
+                                "Are you sure you want to regenerate the business test cases? This will overwrite your current results."
+                              )
+                              if (confirmed) {
+                                onRegenerateFile("business-combined")
+                              }
+                            }}
+                            className="h-6 w-6 p-0"
+                            title="Regenerate business test cases"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -225,15 +248,35 @@ export function FileListDisplay({
                           {getStatusIcon(result.status)}
                           <span className="text-sm">{getStatusText(result.status)}</span>
                           {result.status === "completed" && result.csvData && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onDownloadCSV(result)}
-                              className="h-6 w-6 p-0"
-                              title="Download CSV"
-                            >
-                              <Download className="h-3 w-3" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onDownloadCSV(result)}
+                                className="h-6 w-6 p-0"
+                                title="Download CSV"
+                              >
+                                <Download className="h-3 w-3" />
+                              </Button>
+                              {onRegenerateFile && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const confirmed = window.confirm(
+                                      `Are you sure you want to regenerate test cases for "${file.name}"? This will overwrite your current results.`
+                                    )
+                                    if (confirmed) {
+                                      onRegenerateFile(file.id)
+                                    }
+                                  }}
+                                  className="h-6 w-6 p-0"
+                                  title="Regenerate test cases for this file"
+                                >
+                                  <RotateCcw className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </>
                           )}
                         </>
                       )}
