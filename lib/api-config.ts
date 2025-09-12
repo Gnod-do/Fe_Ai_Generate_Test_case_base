@@ -150,7 +150,7 @@ export const getEnvironmentConfig = () => {
   switch (env) {
     case 'production':
       return {
-        MAIN_API: "https://ee9a825924de.ngrok-free.app",
+        MAIN_API: "https://0b54763f73a1.ngrok-free.app",
         UML_API: "https://img2uml.app.n8n.cloud",
         FALLBACK_API: "https://testcase-gen.app.n8n.cloud:5678",
       }
