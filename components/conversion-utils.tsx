@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react"
 import type { UploadedFile, StreamType } from "@/app/page"
 import { isDevMode, generateMockMarkdownContent, generateMockUmlContent, simulateAsyncOperation } from "@/lib/dev-mode"
+import { API_URLS, createHtmlConversionOptions } from "@/lib/api-config"
 
 interface ConversionStatus {
   fileId: string
@@ -64,7 +65,7 @@ export function useConversionLogic(
       
       formData.append('img', blob, file.name)
       
-      const apiResponse = await fetch('https://img2uml.app.n8n.cloud/webhook/bd5a247d-bdb5-47ca-a4b8-308bb9d8460c', {
+      const apiResponse = await fetch(API_URLS.UML_EXTRACTION, {
         method: 'POST',
         body: formData
       })
@@ -164,9 +165,8 @@ export function useConversionLogic(
           markdownContent = generateMockMarkdownContent(file.name, file.type, selectedStream || 'unknown')
         } else {
           // Real API call
-          const response = await fetch("https://ccc6d7501344.ngrok-free.app/webhook/html-to-md", {
+          const fetchOptions = createHtmlConversionOptions({
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               content: file.content,
               fileName: file.name,
@@ -175,6 +175,8 @@ export function useConversionLogic(
             }),
             signal: abortControllerRef.current.signal,
           })
+
+          const response = await fetch(API_URLS.HTML_TO_MD, fetchOptions)
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
@@ -235,10 +237,22 @@ export function useConversionLogic(
           break
         }
 
+        // Provide user-friendly error messages
+        let errorMessage = "Unknown error"
+        if (error instanceof Error) {
+          if (error.message.includes('timeout')) {
+            errorMessage = `Conversion timeout - ${file.name} took too long to process. Try with a smaller file or check your connection.`
+          } else if (error.message.includes('Failed to fetch')) {
+            errorMessage = `Network error - Unable to reach the conversion service. Please check your internet connection.`
+          } else {
+            errorMessage = error.message
+          }
+        }
+
         setConversionStatuses((prev) =>
           prev.map((status) =>
             status.fileId === file.id
-              ? { ...status, status: "error", error: error instanceof Error ? error.message : "Unknown error" }
+              ? { ...status, status: "error", error: errorMessage }
               : status,
           ),
         )

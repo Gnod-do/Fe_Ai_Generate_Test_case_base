@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import { isDevMode, generateMockMarkdownContent, simulateAsyncOperation } from "@/lib/dev-mode"
+import { getHtmlToMdEndpoints, createHtmlConversionOptions } from "@/lib/api-config"
 export type FileType = "business" | "detail-api" | "api-integration" | "validation" | "uml-image" | "error"
 export type StreamType = "business" | "validation"
 import {
@@ -327,9 +328,7 @@ export default function TestCaseGenerator() {
       } else {
         // Real API call
         // Real API call with fallback endpoints
-        const endpoints = [
-          "https://ccc6d7501344.ngrok-free.app/webhook/html-to-md",
-        ]
+        const endpoints = getHtmlToMdEndpoints()
 
         let response
         let lastError
@@ -344,26 +343,17 @@ export default function TestCaseGenerator() {
               contentLength: fileToRegenerate.content?.length
             })
 
-            // Add timeout to fetch request
-            const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-
-            response = await fetch(endpoint, {
+            const fetchOptions = createHtmlConversionOptions({
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-              },
               body: JSON.stringify({
                 content: fileToRegenerate.content,
                 fileName: fileToRegenerate.name,
                 fileType: fileToRegenerate.type,
                 stream: selectedStream,
               }),
-              signal: controller.signal,
             })
 
-            clearTimeout(timeoutId)
+            response = await fetch(endpoint, fetchOptions)
 
             console.log('Response status:', response.status)
             console.log('Response headers:', Object.fromEntries(response.headers.entries()))

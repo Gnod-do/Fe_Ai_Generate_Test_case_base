@@ -13,6 +13,7 @@ import { isDevMode, simulateAsyncOperation } from "@/lib/dev-mode"
 import { GenerationStatusDisplay } from "./generation-status-display"
 import { FileListDisplay } from "./file-list-display"
 import { DownloadDialog } from "./download-dialog"
+import { API_URLS, createTestGenerationOptions } from "@/lib/api-config"
 
 interface GenerationStepProps {
   uploadedFiles: UploadedFile[]
@@ -158,9 +159,8 @@ TC005,Security test for ${file.name},Malformed input,Secure error handling,High`
           ))
         } else {
           // Real API call
-          const response = await fetch("https://ccc6d7501344.ngrok-free.app/webhook/generate-test-validate", {
+          const fetchOptions = createTestGenerationOptions({
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               content: file.convertedContent,
               fileName: file.name,
@@ -168,8 +168,10 @@ TC005,Security test for ${file.name},Malformed input,Secure error handling,High`
               stream: effectiveStream,
               fileId: file.id,
             }),
-            signal: controller?.signal
+            signal: controller?.signal,
           })
+
+          const response = await fetch(API_URLS.GENERATE_VALIDATION_TESTS, fetchOptions)
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
@@ -255,12 +257,13 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
           apiIntegration: `${apiIntegrationContent}`
         }
 
-        const response = await fetch("https://ccc6d7501344.ngrok-free.app/webhook/gen-test-case-bussiness", {
+        const fetchOptions = createTestGenerationOptions({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody),
-          signal: controller?.signal
+          signal: controller?.signal,
         })
+
+        const response = await fetch(API_URLS.GENERATE_BUSINESS_TESTS, fetchOptions)
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -454,9 +457,8 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
           ))
         } else {
           // Real API call
-          const response = await fetch("https://ccc6d7501344.ngrok-free.app/webhook/generate-test-validate", {
+          const fetchOptions = createTestGenerationOptions({
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               content: file.convertedContent,
               fileName: file.name,
@@ -465,6 +467,8 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
               fileId: file.id,
             }),
           })
+
+          const response = await fetch(API_URLS.GENERATE_VALIDATION_TESTS, fetchOptions)
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
