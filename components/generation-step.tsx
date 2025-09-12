@@ -681,7 +681,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
             )}
           </div>
 
-          {effectiveStream === "business" && (!filesWithContent.find(f => f.type === "business") || !filesWithContent.find(f => f.type === "detail-api")) && (
+          {effectiveStream === "business" && (!filesWithContent.find(f => f.type === "business")) && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="text-sm text-yellow-800">
                 <strong>⚠️ Missing Required Files:</strong>
