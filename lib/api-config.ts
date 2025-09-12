@@ -6,13 +6,13 @@
 // Base URLs for different services
 export const API_BASE_URLS = {
   // Main conversion and test generation service
-  MAIN_API: "https://ee9a825924de.ngrok-free.app",
+  MAIN_API: "https://testcase-gen.app.n8n.cloud",
   
   // UML image processing service
   UML_API: "https://img2uml.app.n8n.cloud",
   
   // Fallback URLs for redundancy
-  FALLBACK_API: "https://testcase-gen.app.n8n.cloud:5678",
+  FALLBACK_API: "https://testcase-gen.app.n8n.cloud",
 } as const
 
 // API Endpoints
