@@ -207,8 +207,8 @@ TC005,Security test for ${file.name},Malformed input,Secure error handling,High`
     const detailApiFile = filesWithContent.find(f => f.type === "detail-api")
     const apiIntegrationFiles = filesWithContent.filter(f => f.type === "api-integration")
 
-    if (!businessFile || !detailApiFile) {
-      alert("Business flow requires both Business Document and Detail API files.")
+    if (!businessFile ) {
+      alert("Business flow requires a Business Document.")
       return
     }
 
@@ -251,9 +251,11 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
           .map(file => file.convertedContent)
           .join('\n\n')
 
+        const detailApiContent = detailApiFile ? detailApiFile.convertedContent : ""
+
         const requestBody = {
           business: `${businessFile.convertedContent}`,
-          detailApi: `${detailApiFile.convertedContent}`,
+          detailApi: `${detailApiContent}`,
           apiIntegration: `${apiIntegrationContent}`
         }
 
@@ -685,7 +687,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                 <strong>⚠️ Missing Required Files:</strong>
                 <ul className="mt-1 ml-4 list-disc">
                   {!filesWithContent.find(f => f.type === "business") && <li>Business Document is required</li>}
-                  {!filesWithContent.find(f => f.type === "detail-api") && <li>Detail API Document is required</li>}
+                  {/* {!filesWithContent.find(f => f.type === "detail-api") && <li>Detail API Document is required</li>} */}
                 </ul>
               </div>
             </div>

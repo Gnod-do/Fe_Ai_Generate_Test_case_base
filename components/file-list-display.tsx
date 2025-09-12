@@ -68,7 +68,7 @@ export function FileListDisplay({
           <h4 className="font-medium text-blue-900 mb-2">📋 Business Flow Requirements</h4>
           <div className="grid gap-2 text-sm">
             <div><span className="font-medium text-purple-800">📋 Business Document:</span> Required (1 file)</div>
-            <div><span className="font-medium text-blue-800">🔧 Detail API:</span> Required (1 file)</div>
+            <div><span className="font-medium text-blue-800">🔧 Detail API:</span> Optional (1 file)</div>
             <div><span className="font-medium text-green-800">🔗 API Integration:</span> Optional (multiple files allowed)</div>
           </div>
         </div>
