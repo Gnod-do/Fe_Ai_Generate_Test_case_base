@@ -590,7 +590,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
               <Button
                 onClick={handleGenerateTestCases}
                 disabled={!effectiveStream || filesWithContent.length === 0 || isGenerating || 
-                  (effectiveStream === "business" && (!filesWithContent.find(f => f.type === "business") || !filesWithContent.find(f => f.type === "detail-api")))}
+                  (effectiveStream === "business" && (!filesWithContent.find(f => f.type === "business")))}
                 className="flex-1"
               >
                 {!effectiveStream ? (
