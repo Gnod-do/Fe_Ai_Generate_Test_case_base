@@ -201,7 +201,7 @@ export default function TestCaseGenerator() {
     localStorage.setItem('currentStep', '0')
 
     // Show success message
-    toast.success("Ready to generate new test cases!")
+    toast.success("Sẵn sàng tạo test cases mới!")
   }
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
@@ -434,7 +434,7 @@ export default function TestCaseGenerator() {
       }
 
       // Show success message to user
-      toast.success(`File "${fileToRegenerate.name}" regenerated successfully`)
+      toast.success(`Tài liệu "${fileToRegenerate.name}" đã được tạo lại thành công`)
 
       // Update conversion status with new result
       conversionData.statuses = conversionData.statuses.map((status: ConversionStatus) =>
@@ -467,7 +467,7 @@ export default function TestCaseGenerator() {
       }
 
       // Show user-friendly error message
-      toast.error(`Regeneration failed: ${errorMessage}`)
+      toast.error(`Tạo lại thất bại: ${errorMessage}`)
 
       // Update status to error
       const storageKey = `conversion-data-${selectedStream}`
@@ -577,10 +577,10 @@ export default function TestCaseGenerator() {
   }
 
   const steps = [
-    { number: 0, title: "Select Stream", description: "Choose test case type" },
-    { number: 1, title: "Upload Files", description: "Upload HTML documents" },
-    { number: 2, title: "Convert & Review", description: "Convert to Markdown and review" },
-    { number: 3, title: "Generate", description: "Generate test cases" },
+    { number: 0, title: "Chọn Luồng", description: "Chọn loại test case" },
+    { number: 1, title: "Tải Tài Liệu", description: "Tải lên tài liệu HTML" },
+    { number: 2, title: "Chuyển Đổi & Duyệt", description: "Chuyển đổi sang Markdown và duyệt" },
+    { number: 3, title: "Tạo Test Case", description: "Tạo test cases" },
   ]
 
   return (
@@ -596,7 +596,7 @@ export default function TestCaseGenerator() {
               className="w-full justify-start"
             >
               {isHistoryOpen ? <ChevronLeft className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4" />}
-              {isHistoryOpen && "Hide History"}
+              {isHistoryOpen && "Ẩn Lịch Sử"}
             </Button>
           </div>
           {isHistoryOpen && (
@@ -616,42 +616,41 @@ export default function TestCaseGenerator() {
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1"></div>
                   <div>
-                    <h1 className="text-3xl font-bold text-foreground mb-2">Test Case Generator</h1>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Trình Tạo Test Case</h1>
                     <p className="text-muted-foreground">
-                      Choose your test case stream and convert HTML documents to generate comprehensive test cases
+                      Chọn luồng test case và chuyển đổi tài liệu HTML để tạo test cases toàn diện
                     </p>
                   </div>
                   <div className="flex-1 flex justify-end">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline">Instruction</Button>
+                        <Button variant="outline">Hướng Dẫn</Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
-                          <DialogTitle>How to use this page</DialogTitle>
+                          <DialogTitle>Cách sử dụng trang này</DialogTitle>
                         </DialogHeader>
 
-                        {/* Nội dung mẫu — bạn sửa tuỳ ý */}
                         <div className="prose prose-sm dark:prose-invert max-w-none space-y-4">
                           <ol className="list-decimal pl-5 space-y-2">
-                            <li><strong>Select Stream</strong>: chọn loại test case (Business / Validation).</li>
-                            <li><strong>Upload Files</strong>: tải lên các tài liệu HTML liên quan.</li>
-                            <li><strong>Convert & Review</strong>: chuyển đổi sang Markdown, xem lại và tái tạo khi cần.</li>
-                            <li><strong>Generate</strong>: tạo test cases dựa trên nội dung đã duyệt.</li>
+                            <li><strong>Chọn Luồng</strong>: Chọn loại test case (Kịch bản nghiệp vụ / Kiểm thử kỹ thuật).</li>
+                            <li><strong>Tải Tài Liệu</strong>: Tải lên các tài liệu HTML có thiết kế chi tiết.</li>
+                            <li><strong>Chuyển Đổi & Duyệt</strong>: Chuyển đổi sang Markdown, xem lại và tái tạo khi cần.</li>
+                            <li><strong>Tạo Test Case</strong>: Tạo test cases dựa trên nội dung đã duyệt.</li>
                           </ol>
 
-                          <h4 className="font-semibold mt-4">Tips</h4>
+                          <h4 className="font-semibold mt-4">Mẹo Sử Dụng</h4>
                           <ul className="list-disc pl-5 space-y-1">
-                            <li>Có thể mở panel History để tái sử dụng tài liệu cũ.</li>
-                            <li>Dev Mode hỗ trợ mock nội dung khi chưa gọi API thực.</li>
-                            <li>Dữ liệu bước/stream được lưu trong <code>localStorage</code> để bạn tiếp tục sau.</li>
+                            <li>Có thể mở panel Lịch Sử để tái sử dụng tài liệu cũ.</li>
+                            <li>Chế độ Dev hỗ trợ mock nội dung khi chưa gọi API thực.</li>
+                            <li>Dữ liệu bước/luồng được lưu trong <code>localStorage</code> để tiếp tục sau.</li>
                           </ul>
                         </div>
 
                         <div className="flex justify-end">
                           <DialogClose asChild>
                             <Button type="button" variant="default">
-                              Got it
+                              Đã Hiểu
                             </Button>
                           </DialogClose>
                         </div>
@@ -667,7 +666,7 @@ export default function TestCaseGenerator() {
               {!isHydrated ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading...</p>
+                  <p className="text-muted-foreground">Đang tải...</p>
                 </div>
               ) : (
                 <>

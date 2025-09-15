@@ -34,47 +34,47 @@ interface FileBoxConfig {
 const businessFileBoxes: FileBoxConfig[] = [
   {
     type: "business",
-    label: "📋 Business Requirements",
-    friendlyName: "Main Documentation",
-    description: "Upload your primary business requirements document",
-    helpText: "This is your main specification document that describes what needs to be tested",
+    label: "📋 Yêu Cầu Nghiệp Vụ",
+    friendlyName: "Tài Liệu Chính",
+    description: "Tải lên tài liệu yêu cầu nghiệp vụ chính",
+    helpText: "Đây là tài liệu đặc tả chính mô tả những gì cần được kiểm thử",
     color: "bg-purple-100 text-purple-800",
     icon: "📋",
-    examples: "Business requirements, specifications, workflows",
+    examples: "Yêu cầu nghiệp vụ, đặc tả, quy trình làm việc",
     required: true
   },
   {
     type: "detail-api",
-    label: "🔧 Technical Specifications", 
-    friendlyName: "API Documentation",
-    description: "Upload detailed technical API specifications",
-    helpText: "Upload API documentation that shows endpoints, parameters, and responses",
+    label: "🔧 Thiết Kế Chi Tiết Kỹ Thuật", 
+    friendlyName: "Tài Liệu API",
+    description: "Tải lên thiết kế chi tiết kỹ thuật API",
+    helpText: "Tải lên tài liệu API hiển thị endpoints, tham số và phản hồi",
     color: "bg-blue-100 text-blue-800",
     icon: "🔧",
-    examples: "API specifications, endpoints, detailed documentation",
+    examples: "Đặc tả API, endpoints, tài liệu chi tiết",
     required: true
   },
   {
     type: "api-integration",
-    label: "🔗 Integration Guides",
-    friendlyName: "System Integration",
-    description: "Upload API integration documents (optional - multiple files allowed)",
-    helpText: "Additional integration documentation - you can upload multiple files here",
+    label: "🔗 Hướng Dẫn Tích Hợp",
+    friendlyName: "Tích Hợp Hệ Thống",
+    description: "Tải lên tài liệu tích hợp API (tùy chọn - cho phép nhiều tài liệu)",
+    helpText: "Tài liệu tích hợp bổ sung - bạn có thể tải lên nhiều tài liệu ở đây",
     color: "bg-green-100 text-green-800",
     icon: "🔗",
-    examples: "Integration guides, API connections, system integration docs",
+    examples: "Hướng dẫn tích hợp, kết nối API, tài liệu tích hợp hệ thống",
     required: false,
     allowMultiple: true
   },
   {
     type: "uml-image",
-    label: "🖼️ UML Image",
-    friendlyName: "UML Diagram",
-    description: "Upload a UML diagram image (optional)",
-    helpText: "Upload a UML diagram that will be processed and added to your business requirements",
+    label: "🖼️ Sơ Đồ UML",
+    friendlyName: "Biểu Đồ UML",
+    description: "Tải lên hình ảnh sơ đồ UML (tùy chọn)",
+    helpText: "Tải lên sơ đồ UML sẽ được xử lý và thêm vào yêu cầu nghiệp vụ",
     color: "bg-yellow-100 text-yellow-800",
     icon: "🖼️",
-    examples: "UML diagrams, flowcharts, system diagrams",
+    examples: "Sơ đồ UML, biểu đồ luồng, sơ đồ hệ thống",
     required: false
   },
 ]
@@ -82,13 +82,13 @@ const businessFileBoxes: FileBoxConfig[] = [
 const validationFileBoxes: FileBoxConfig[] = [
   {
     type: "validation",
-    label: "✅ Validation Document",
-    friendlyName: "Validation Document",
-    description: "Upload a single document for validation test case generation",
-    helpText: "Any document that contains validation rules or data structures to test",
+    label: "✅ Tài Liệu Kiểm Thử",
+    friendlyName: "Tài Liệu Kiểm Thử",
+    description: "Tải lên một tài liệu để tạo test cases kiểm thử kỹ thuật",
+    helpText: "Bất kỳ tài liệu nào chứa quy tắc kiểm thử hoặc cấu trúc dữ liệu cần kiểm tra",
     color: "bg-orange-100 text-orange-800", 
     icon: "✅",
-    examples: "Any document for validation testing",
+    examples: "Bất kỳ tài liệu nào để kiểm thử kỹ thuật",
     required: true
   },
 ]
@@ -137,7 +137,7 @@ export function FileUploadStep({
   const handleFiles = async (files: File[], boxType: FileType) => {
     // For validation stream, only allow one file total
     if (selectedStream === "validation" && (uploadedFiles.length > 0 || files.length > 1)) {
-      alert("Validation stream only allows one file. Please remove existing files first.")
+      alert("Luồng kiểm thử chỉ cho phép một tài liệu. Vui lòng xóa tài liệu hiện có trước.")
       return
     }
 
@@ -145,7 +145,7 @@ export function FileUploadStep({
     if (selectedStream === "business" && boxType !== "api-integration") {
       const existingFilesOfType = uploadedFiles.filter(f => f.type === boxType)
       if (existingFilesOfType.length > 0 || files.length > 1) {
-        alert(`Only one ${boxType} file is allowed. Please remove the existing file first.`)
+        alert(`Chỉ cho phép một tài liệu ${boxType}. Vui lòng xóa tài liệu hiện có trước.`)
         return
       }
     }
@@ -199,7 +199,7 @@ export function FileUploadStep({
     const filesToRemove = uploadedFiles.filter(file => file.type === boxType)
     if (filesToRemove.length === 0) return
     
-    const confirmMessage = `Are you sure you want to remove all ${filesToRemove.length} ${boxType} file${filesToRemove.length > 1 ? 's' : ''}?`
+    const confirmMessage = `Bạn có chắc muốn xóa tất cả ${filesToRemove.length} tài liệu ${boxType}?`
     if (window.confirm(confirmMessage)) {
       // Remove all files of this type
       const remainingFiles = uploadedFiles.filter(file => file.type !== boxType)
@@ -209,7 +209,7 @@ export function FileUploadStep({
 
   const removeFile = async (fileId: string, fileName: string) => {
     // Optional: Add confirmation dialog for better UX
-    if (window.confirm(`Are you sure you want to remove "${fileName}"?`)) {
+    if (window.confirm(`Bạn có chắc muốn xóa "${fileName}"?`)) {
       setRemovingFileId(fileId)
       try {
         // Add a small delay to show loading state
@@ -228,30 +228,30 @@ export function FileUploadStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload HTML Documents</CardTitle>
+        <CardTitle>Tải Lên Tài Liệu HTML</CardTitle>
         <CardDescription>
           {selectedStream === "validation" 
-            ? "Upload a single HTML document for validation test case generation." 
+            ? "Tải lên một tài liệu HTML để tạo test cases kiểm thử kỹ thuật." 
             : selectedStream === "business"
-            ? "Upload HTML documents for business test case generation. Business and Detail API documents are required, API Integration and UML Image documents are optional."
-            : "Upload your documents for test case generation. Choose the correct category for each type of document to optimize test case quality."
+            ? "Tải lên tài liệu HTML để tạo test cases kịch bản nghiệp vụ. Yêu cầu nghiệp vụ và thiết kế chi tiết kỹ thuật là bắt buộc, tích hợp API và UML là tùy chọn."
+            : "Tải lên tài liệu của bạn để tạo test cases. Chọn đúng danh mục cho từng loại tài liệu để tối ưu chất lượng test case."
           }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* File Type Explanation */}
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">📋 File Categories Guide</h4>
+          <h4 className="font-medium text-blue-900 mb-2">📋 Hướng Dẫn Phân Loại Tài Liệu</h4>
           <div className="grid gap-2 text-sm">
             {selectedStream === "business" ? (
               <>
-                <div><span className="font-medium text-purple-800">📋 Business Document:</span> Business requirements, specifications, and workflows</div>
-                <div><span className="font-medium text-blue-800">🔧 Detail API:</span> Detailed API documentation and specifications</div>
-                <div><span className="font-medium text-green-800">🔗 API Integration:</span> Integration guides and API connection documents (multiple files allowed)</div>
-                <div><span className="font-medium text-yellow-800">🖼️ UML Image:</span> UML diagrams that will be processed and added to business requirements</div>
+                <div><span className="font-medium text-purple-800">📋 Tài Liệu Nghiệp Vụ:</span> Yêu cầu nghiệp vụ, đặc tả và quy trình làm việc</div>
+                <div><span className="font-medium text-blue-800">🔧 Thiết Kế Chi Tiết API:</span> Tài liệu API chi tiết và đặc tả kỹ thuật</div>
+                <div><span className="font-medium text-green-800">🔗 Tích Hợp API:</span> Hướng dẫn tích hợp và tài liệu kết nối API (cho phép nhiều tài liệu)</div>
+                <div><span className="font-medium text-yellow-800">🖼️ Sơ Đồ UML:</span> Biểu đồ UML sẽ được xử lý và thêm vào yêu cầu nghiệp vụ</div>
               </>
             ) : (
-              <div><span className="font-medium text-orange-800">✅ Validation Document:</span> Any single document for validation test case generation</div>
+              <div><span className="font-medium text-orange-800">✅ Tài Liệu Kiểm Thử:</span> Bất kỳ tài liệu nào để tạo test cases kiểm thử kỹ thuật</div>
             )}
           </div>
         </div>
@@ -287,12 +287,12 @@ export function FileUploadStep({
                     </div>
                     <p className="text-sm text-muted-foreground">{box.description}</p>
                     <p className="text-xs text-muted-foreground italic">
-                      Examples: {box.examples}
+                      Ví dụ: {box.examples}
                     </p>
                     {hasFiles && (
                       <div className="flex items-center justify-center gap-2">
                         <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          {boxFiles.length} file{boxFiles.length > 1 ? "s" : ""} uploaded
+                          {boxFiles.length} tài liệu đã tải lên
                         </Badge>
                         <Button
                           variant="ghost"
@@ -305,7 +305,7 @@ export function FileUploadStep({
                           className="hover:bg-destructive/10 hover:text-destructive text-xs h-6 px-2"
                           title={`Clear all ${box.label} files`}
                         >
-                          Clear All
+                          Xóa Tất Cả
                         </Button>
                       </div>
                     )}
@@ -369,13 +369,13 @@ export function FileUploadStep({
               variant="ghost"
               size="sm"
               onClick={() => {
-                if (window.confirm(`Are you sure you want to remove all ${uploadedFiles.length} uploaded files?`)) {
+                if (window.confirm(`Bạn có chắc muốn xóa tất cả ${uploadedFiles.length} tài liệu đã tải lên?`)) {
                   onFilesUploaded([])
                 }
               }}
               className="hover:bg-destructive/10 hover:text-destructive text-sm"
             >
-              Clear All Files ({uploadedFiles.length})
+              Xóa Tất Cả Tài Liệu ({uploadedFiles.length})
             </Button>
           </div>
         )}
@@ -388,12 +388,12 @@ export function FileUploadStep({
               onBack()
             }}
           >
-            Back
+            Quay Lại
           </Button>
           <Button onClick={onNext} disabled={uploadedFiles.length === 0} className="min-w-32">
             {uploadedFiles.length === 0 
-              ? "No Files to Convert" 
-              : `Convert ${uploadedFiles.length} File${uploadedFiles.length > 1 ? 's' : ''}`
+              ? "Không Có Tài Liệu Để Chuyển Đổi" 
+              : `Chuyển Đổi ${uploadedFiles.length} Tài Liệu`
             }
           </Button>
         </div>

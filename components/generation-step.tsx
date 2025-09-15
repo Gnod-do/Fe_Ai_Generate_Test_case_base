@@ -82,7 +82,7 @@ export function GenerationStep({
 
   const handleCancelGeneration = () => {
     const confirmed = window.confirm(
-      `Are you sure you want to cancel the ${effectiveStream === "business" ? "business" : "validation"} test case generation?`
+      `Bạn có chắc muốn hủy việc tạo test cases ${effectiveStream === "business" ? "kịch bản nghiệp vụ" : "kiểm thử kỹ thuật"}?`
     )
     
     if (!confirmed) return
@@ -208,7 +208,7 @@ TC005,Security test for ${file.name},Malformed input,Secure error handling,High`
     const apiIntegrationFiles = filesWithContent.filter(f => f.type === "api-integration")
 
     if (!businessFile ) {
-      alert("Business flow requires a Business Document.")
+      alert("Kịch bản nghiệp vụ yêu cầu tài liệu nghiệp vụ.")
       return
     }
 
@@ -529,39 +529,39 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Play className="h-5 w-5" />
-            <span>Generate Test Cases</span>
+            <span>Tạo Test Cases</span>
             {effectiveStream && (
               <Badge variant="outline" className="ml-2">
-                {effectiveStream === "business" ? "Business Validation" : "Technical Validation"}
+                {effectiveStream === "business" ? "Kịch Bản Nghiệp Vụ" : "Kiểm Thử Kỹ Thuật"}
               </Badge>
             )}
           </CardTitle>
           <CardDescription>
-            Generate comprehensive test cases from your converted markdown files
+            Tạo test cases toàn diện từ các tài liệu markdown đã chuyển đổi
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">{filesWithContent.length}</div>
-              <div className="text-sm text-blue-800">Files Ready</div>
+              <div className="text-sm text-blue-800">Tài Liệu Sẵn Sàng</div>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{completedCount}</div>
-              <div className="text-sm text-green-800">Completed</div>
+              <div className="text-sm text-green-800">Hoàn Thành</div>
             </div>
             <div className="p-4 bg-orange-50 rounded-lg">
               <div className="text-2xl font-bold text-orange-600">
                 {generationResults.filter(r => r.status === "error").length}
               </div>
-              <div className="text-sm text-orange-800">Errors</div>
+              <div className="text-sm text-orange-800">Lỗi</div>
             </div>
           </div>
 
           {generationResults.length > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Generation Progress</span>
+                <span>Tiến Độ Tạo Test Case</span>
                 <span>{Math.round(progressPercentage)}%</span>
               </div>
               <Progress value={progressPercentage} className="w-full" />
@@ -570,7 +570,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
 
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-medium">File Management</h3>
+              <h3 className="text-sm font-medium">Quản Lý Tài Liệu</h3>
               <div className="flex space-x-2">
                 {onPickFromHistory && (
                   <Button
@@ -580,7 +580,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                     disabled={isGenerating}
                   >
                     <FolderOpen className="h-4 w-4 mr-2" />
-                    Pick from History
+                    Chọn Từ Lịch Sử
                   </Button>
                 )}
               </div>
@@ -596,22 +596,22 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                 {!effectiveStream ? (
                   <>
                     <AlertCircle className="h-4 w-4 mr-2" />
-                    No Test Case Type Selected
+                    Chưa Chọn Loại Test Case
                   </>
                 ) : isGenerating ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Generating {effectiveStream === "business" ? "Business" : "Validation"} Test Cases...
+                    Đang Tạo Test Cases {effectiveStream === "business" ? "Kịch Bản Nghiệp Vụ" : "Kiểm Thử Kỹ Thuật"}...
                   </>
                 ) : effectiveStream === "business" ? (
                   <>
                     <Play className="h-4 w-4 mr-2" />
-                    Generate Business Test Cases ({filesWithContent.length} files)
+                    Tạo Test Cases Kịch Bản Nghiệp Vụ ({filesWithContent.length} tài liệu)
                   </>
                 ) : (
                   <>
                     <Play className="h-4 w-4 mr-2" />
-                    Generate Validation Test Cases ({filesWithContent.length} files)
+                    Tạo Test Cases Kiểm Thử Kỹ Thuật ({filesWithContent.length} tài liệu)
                   </>
                 )}
               </Button>
@@ -621,7 +621,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                 <Button
                   onClick={() => {
                     const confirmed = window.confirm(
-                      `Are you sure you want to regenerate all ${effectiveStream === "business" ? "business" : "validation"} test cases? This will overwrite your current results.`
+                      `Bạn có chắc muốn tạo lại tất cả test cases ${effectiveStream === "business" ? "kịch bản nghiệp vụ" : "kiểm thử kỹ thuật"}? Điều này sẽ ghi đè kết quả hiện tại.`
                     )
                     if (confirmed) {
                       setGenerationResults([])
@@ -633,7 +633,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                   className="min-w-[140px]"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Regenerate All
+                  Tạo Lại Tất Cả
                 </Button>
               )}
               
@@ -646,7 +646,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                   className="min-w-[120px]"
                 >
                   <StopCircle className="h-4 w-4 mr-2" />
-                  Cancel
+                  Hủy
                 </Button>
               )}
               
@@ -658,7 +658,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                   <div className="flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
                     <span className="text-sm font-medium text-blue-900">
-                      Generating {selectedStream === "business" ? "Business" : "Validation"} Test Cases
+                      Đang Tạo Test Cases {selectedStream === "business" ? "Kịch Bản Nghiệp Vụ" : "Kiểm Thử Kỹ Thuật"}
                     </span>
                   </div>
                   <Button
@@ -668,13 +668,13 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                     className="text-red-600 border-red-300 hover:bg-red-50"
                   >
                     <X className="h-3 w-3 mr-1" />
-                    Stop
+                    Dừng
                   </Button>
                 </div>
                 <div className="mt-2 text-xs text-blue-700">
                   {selectedStream === "business" 
-                    ? "Processing combined business flow..." 
-                    : `Processing file ${currentGeneratingIndex + 1} of ${filesWithContent.length}...`
+                    ? "Đang xử lý kịch bản nghiệp vụ tổng hợp..." 
+                    : `Đang xử lý tài liệu ${currentGeneratingIndex + 1} trong ${filesWithContent.length}...`
                   }
                 </div>
               </div>
@@ -684,9 +684,9 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
           {effectiveStream === "business" && (!filesWithContent.find(f => f.type === "business")) && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="text-sm text-yellow-800">
-                <strong>⚠️ Missing Required Files:</strong>
+                <strong>⚠️ Thiếu Tài Liệu Bắt Buộc:</strong>
                 <ul className="mt-1 ml-4 list-disc">
-                  {!filesWithContent.find(f => f.type === "business") && <li>Business Document is required</li>}
+                  {!filesWithContent.find(f => f.type === "business") && <li>Yêu cầu tài liệu nghiệp vụ</li>}
                   {/* {!filesWithContent.find(f => f.type === "detail-api") && <li>Detail API Document is required</li>} */}
                 </ul>
               </div>
@@ -707,7 +707,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
 
           <div className="flex justify-between pt-4 border-t">
             <Button variant="outline" onClick={onBack} disabled={isGenerating}>
-              Back to Review
+              Quay Lại Duyệt
             </Button>
             
             <div className="flex items-center space-x-4">
@@ -717,7 +717,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                 <>
                   <div className="text-sm text-green-600 flex items-center">
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    All test cases generated successfully!
+                    Tất cả test cases đã được tạo thành công!
                   </div>
                   {onGenerateNew && (
                     <Button 
@@ -726,7 +726,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <RotateCcw className="h-4 w-4 mr-2" />
-                      Generate New Test Case
+                      Tạo Test Case Mới
                     </Button>
                   )}
                 </>
