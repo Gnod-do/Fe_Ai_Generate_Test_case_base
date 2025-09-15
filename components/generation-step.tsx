@@ -9,6 +9,7 @@ import { Play, CheckCircle, Download, X, FolderOpen, StopCircle, AlertCircle, Ro
 import type { UploadedFile, StreamType } from "@/app/page"
 import { useEffectiveStream } from "@/lib/stream-utils"
 import { convertMarkdownToCSV } from "@/lib/csv-utils"
+import { downloadCSVAsExcel, getExcelFileSize } from "@/lib/excel-utils"
 import { isDevMode, simulateAsyncOperation } from "@/lib/dev-mode"
 import { GenerationStatusDisplay } from "./generation-status-display"
 import { FileListDisplay } from "./file-list-display"
@@ -393,7 +394,7 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
     }
   }
 
-  const handleDownloadCSV = (result: GenerationResult) => {
+  const handleDownloadExcel = (result: GenerationResult) => {
     if (!result.csvData) return
     
     setPendingDownload(result)
@@ -403,15 +404,22 @@ BTC005,Customer support contact,1. Navigate to help 2. Submit contact form,Suppo
   const handleDownloadConfirm = (filename: string) => {
     if (!pendingDownload?.csvData) return
 
-    const blob = new Blob([pendingDownload.csvData], { type: "text/csv" })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
+    try {
+      // Use the new Excel download utility
+      downloadCSVAsExcel(pendingDownload.csvData, filename.replace(/\.xlsx$/i, ''), "Test Cases")
+    } catch (error) {
+      console.error('Error downloading Excel file:', error)
+      // Fallback to CSV download if Excel conversion fails
+      const blob = new Blob([pendingDownload.csvData], { type: "text/csv" })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename.replace(/\.xlsx$/i, '.csv')
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    }
     
     // Clear pending download
     setPendingDownload(null)
@@ -504,21 +512,18 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
 
   const completedCount = generationResults.filter(r => r.status === "completed").length
 
-  // Helper function to calculate file size
+  // Helper function to calculate Excel file size (estimated)
   const getFileSize = (csvData: string): string => {
-    const bytes = new Blob([csvData]).size
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    return getExcelFileSize(csvData)
   }
 
-  // Generate default filename
+  // Generate default filename for Excel
   const getDefaultFilename = (result: GenerationResult): string => {
     const streamName = effectiveStream === "business" ? "business" : "validation"
     const timestamp = new Date().toISOString().split('T')[0]
     
     const baseName = result.fileName.replace('.md', '').replace(/[^a-zA-Z0-9_-]/g, '_')
-    return `${baseName}_${streamName}_testcases_${timestamp}.csv`
+    return `${baseName}_${streamName}_testcases_${timestamp}.xlsx`
   }
 
   return (
@@ -701,7 +706,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
             isGenerating={isGenerating}
             onModifyFile={onModifyFile}
             onRemoveFile={onRemoveFile}
-            onDownloadCSV={handleDownloadCSV}
+            onDownloadCSV={handleDownloadExcel}
             onRegenerateFile={handleRegenerateFile}
           />
 
@@ -741,7 +746,7 @@ TC005,Regenerated security test for ${file.name},Malformed input,Secure error ha
         isOpen={downloadDialogOpen}
         onClose={() => setDownloadDialogOpen(false)}
         onConfirm={handleDownloadConfirm}
-        defaultFilename={pendingDownload ? getDefaultFilename(pendingDownload) : "test_cases.csv"}
+        defaultFilename={pendingDownload ? getDefaultFilename(pendingDownload) : "test_cases.xlsx"}
         fileSize={pendingDownload?.csvData ? getFileSize(pendingDownload.csvData) : "Unknown"}
         streamType={effectiveStream}
       />

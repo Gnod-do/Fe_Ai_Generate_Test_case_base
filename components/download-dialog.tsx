@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Download, FileText } from "lucide-react"
+import { Download, FileText, FileSpreadsheet } from "lucide-react"
 
 interface DownloadDialogProps {
   isOpen: boolean
@@ -40,9 +40,9 @@ export function DownloadDialog({
     if (!finalFilename) {
       onConfirm(defaultFilename)
     } else {
-      // Ensure .csv extension
-      const nameWithoutExt = finalFilename.replace(/\.csv$/i, '')
-      onConfirm(`${nameWithoutExt}.csv`)
+      // Ensure .xlsx extension instead of .csv
+      const nameWithoutExt = finalFilename.replace(/\.(csv|xlsx)$/i, '')
+      onConfirm(`${nameWithoutExt}.xlsx`)
     }
     onClose()
   }
@@ -63,15 +63,15 @@ export function DownloadDialog({
           </DialogTitle>
           <DialogDescription>
             Your {streamType === "business" ? "business validation" : "technical validation"} test cases are ready to download.
-            {isMultiple ? " All completed test cases will be combined into a single CSV file." : ""} Choose a filename for your CSV file.
+            {isMultiple ? " All completed test cases will be combined into a single Excel file." : ""} Choose a filename for your Excel file.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
           <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-            <FileText className="h-5 w-5 text-muted-foreground" />
+            <FileSpreadsheet className="h-5 w-5 text-green-600" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">{isMultiple ? "Combined " : ""}Test Cases CSV</p>
+              <p className="text-sm font-medium">{isMultiple ? "Combined " : ""}Test Cases Excel</p>
               <p className="text-xs text-muted-foreground">
                 {isMultiple ? "Combined test cases from all files" : 
                   streamType === "business" ? "Business flow test scenarios" : "Technical validation test cases"}
@@ -94,7 +94,7 @@ export function DownloadDialog({
               className="font-mono"
             />
             <p className="text-xs text-muted-foreground">
-              The .csv extension will be added automatically
+              The .xlsx extension will be added automatically
             </p>
           </div>
         </div>

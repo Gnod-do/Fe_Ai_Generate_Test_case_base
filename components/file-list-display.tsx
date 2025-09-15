@@ -95,7 +95,7 @@ export function FileListDisplay({
                           size="sm"
                           onClick={() => onDownloadCSV(generationResults[0])}
                           className="h-6 w-6 p-0"
-                          title="Download CSV"
+                          title="Download Excel"
                         >
                           <Download className="h-3 w-3" />
                         </Button>
@@ -254,7 +254,7 @@ export function FileListDisplay({
                                 size="sm"
                                 onClick={() => onDownloadCSV(result)}
                                 className="h-6 w-6 p-0"
-                                title="Download CSV"
+                                title="Download Excel"
                               >
                                 <Download className="h-3 w-3" />
                               </Button>
