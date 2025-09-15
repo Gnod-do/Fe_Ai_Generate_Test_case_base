@@ -15,39 +15,39 @@ interface StreamSelectionStepProps {
 const streamOptions = [
   {
     type: "business" as StreamType,
-    title: "Business Test Cases",
-    description: "Generate comprehensive business test cases from business documents, API details, and integration specs",
+    title: "Test Cases Kịch Bản Nghiệp Vụ",
+    description: "Tạo test cases toàn diện cho kịch bản nghiệp vụ từ tài liệu yêu cầu, thiết kế chi tiết API và tích hợp hệ thống",
     icon: FileCheck,
     color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
     badgeColor: "bg-blue-100 text-blue-800",
-    features: ["Business document analysis", "API detail testing", "Integration testing", "Multi-document workflow"],
+    features: ["Phân tích tài liệu nghiệp vụ", "Kiểm thử thiết kế chi tiết API", "Kiểm thử tích hợp", "Quy trình đa tài liệu"],
     requirements: {
-      files: "1-3 files required",
+      files: "Yêu cầu 1-3 tài liệu",
       types: [
-        { name: "📋 Business Requirements", required: true, description: "Main specification document" },
-        { name: "🔧 Technical Specifications", required: true, description: "API documentation and endpoints" },
-        { name: "🔗 Integration Guides", required: false, description: "System integration docs (optional, multiple allowed)" }
+        { name: "📋 Yêu Cầu Nghiệp Vụ", required: true, description: "Tài liệu đặc tả chính" },
+        { name: "🔧 Thiết Kế Chi Tiết Kỹ Thuật", required: true, description: "Tài liệu API và endpoints" },
+        { name: "🔗 Hướng Dẫn Tích Hợp", required: false, description: "Tài liệu tích hợp hệ thống (tùy chọn, cho phép nhiều tài liệu)" }
       ]
     },
-    workflow: "Multi-document → Convert → Generate business test cases",
-    idealFor: "Complex business applications with multiple APIs and integrations"
+    workflow: "Đa tài liệu → Chuyển đổi → Tạo test cases nghiệp vụ",
+    idealFor: "Ứng dụng nghiệp vụ phức tạp với nhiều API và tích hợp"
   },
   {
     type: "validation" as StreamType,
-    title: "Validation Test Cases",
-    description: "Generate validation test cases from a single document for data validation and input verification",
+    title: "Test Cases Kiểm Thử Kỹ Thuật",
+    description: "Tạo test cases kiểm thử kỹ thuật từ một tài liệu cho việc xác thực dữ liệu và kiểm tra đầu vào",
     icon: Shield,
     color: "bg-green-50 border-green-200 hover:bg-green-100",
     badgeColor: "bg-green-100 text-green-800",
-    features: ["Single file validation", "Input verification", "Data integrity checks", "Quick validation testing"],
+    features: ["Kiểm thử một tài liệu", "Xác thực đầu vào", "Kiểm tra tính toàn vẹn dữ liệu", "Kiểm thử nhanh"],
     requirements: {
-      files: "1 file only",
+      files: "Chỉ 1 tài liệu",
       types: [
-        { name: "✅ Validation Document", required: true, description: "Any document for validation testing" }
+        { name: "✅ Tài Liệu Kiểm Thử", required: true, description: "Bất kỳ tài liệu nào để kiểm thử kỹ thuật" }
       ]
     },
-    workflow: "Single document → Convert → Generate validation test cases",
-    idealFor: "Simple validation scenarios and input verification testing"
+    workflow: "Một tài liệu → Chuyển đổi → Tạo test cases kiểm thử",
+    idealFor: "Kịch bản kiểm thử đơn giản và xác thực đầu vào"
   },
 ]
 
@@ -55,8 +55,8 @@ export function StreamSelectionStep({ onStreamSelected, selectedStream }: Stream
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle>Select Test Case Stream</CardTitle>
-        <CardDescription>Choose the type of test cases you want to generate from your HTML documents</CardDescription>
+        <CardTitle>Chọn Luồng Test Case</CardTitle>
+        <CardDescription>Chọn loại test cases bạn muốn tạo từ tài liệu HTML của mình</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
@@ -89,7 +89,7 @@ export function StreamSelectionStep({ onStreamSelected, selectedStream }: Stream
                     
                     {/* File Requirements */}
                     <div className="bg-white/50 rounded-md p-3 space-y-2">
-                      <div className="text-xs font-medium text-gray-700">File Requirements:</div>
+                      <div className="text-xs font-medium text-gray-700">Yêu Cầu Tài Liệu:</div>
                       <div className="text-xs text-blue-600 font-medium">{option.requirements.files}</div>
                       <div className="space-y-1">
                         {option.requirements.types.map((fileType, idx) => (
@@ -105,13 +105,13 @@ export function StreamSelectionStep({ onStreamSelected, selectedStream }: Stream
                     
                     {/* Workflow */}
                     <div className="bg-gray-50 rounded-md p-2">
-                      <div className="text-xs font-medium text-gray-700 mb-1">Workflow:</div>
+                      <div className="text-xs font-medium text-gray-700 mb-1">Quy Trình:</div>
                       <div className="text-xs text-gray-600">{option.workflow}</div>
                     </div>
                     
                     {/* Ideal For */}
                     <div className="text-xs text-gray-600">
-                      <span className="font-medium">Best for:</span> {option.idealFor}
+                      <span className="font-medium">Phù hợp cho:</span> {option.idealFor}
                     </div>
                     
                     <ul className="space-y-1">
@@ -140,7 +140,7 @@ export function StreamSelectionStep({ onStreamSelected, selectedStream }: Stream
         {selectedStream && (
           <div className="flex justify-center pt-4">
             <Button onClick={() => onStreamSelected(selectedStream)} className="min-w-40">
-              Continue with {selectedStream.charAt(0).toUpperCase() + selectedStream.slice(1)} Stream
+              Tiếp Tục với Luồng {selectedStream === "business" ? "Nghiệp Vụ" : "Kiểm Thử"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

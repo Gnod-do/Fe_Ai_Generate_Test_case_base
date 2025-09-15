@@ -163,7 +163,7 @@ export function ConversionReviewStep({
     })
 
     if (completedFiles.length === 0) {
-      alert("No converted files available to upload. Please convert files first.")
+      alert("Không có tài liệu đã chuyển đổi để tải lên. Vui lòng chuyển đổi tài liệu trước.")
       return
     }
 
@@ -191,8 +191,8 @@ export function ConversionReviewStep({
     }))
 
     const result = confirm(
-      `Successfully uploaded ${completedFiles.length} files to history with .md extension!\n\n` +
-      `Click OK to go directly to Step 3 (Generation), or Cancel to stay here.`
+      `Đã tải lên thành công ${completedFiles.length} tài liệu vào lịch sử với đuôi .md!\n\n` +
+      `Nhấp OK để đi thẳng đến Bước 3 (Tạo Test Case), hoặc Hủy để ở lại đây.`
     )
 
     if (result && onNavigateToStep) {
@@ -210,12 +210,12 @@ export function ConversionReviewStep({
   }, [])
 
   const fileTypeLabels = {
-    "business": "📋 Business Requirements",
-    "detail-api": "🔧 Technical Specifications", 
-    "api-integration": "🔗 Integration Guides",
-    "validation": "✅ Validation Document",
-    "uml-image": "🖼️ UML Image",
-    "error": "❌ Error"
+    "business": "📋 Yêu Cầu Nghiệp Vụ",
+    "detail-api": "🔧 Thiết Kế Chi Tiết Kỹ Thuật", 
+    "api-integration": "🔗 Hướng Dẫn Tích Hợp",
+    "validation": "✅ Tài Liệu Kiểm Thử",
+    "uml-image": "🖼️ Sơ Đồ UML",
+    "error": "❌ Lỗi"
   }
 
   const selectedFileData = uploadedFiles.find((file) => file.id === selectedFile)
@@ -278,8 +278,8 @@ export function ConversionReviewStep({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Converted Markdown Result</CardTitle>
-          <CardDescription>Review the converted markdown content</CardDescription>
+          <CardTitle>Kết Quả Markdown Đã Chuyển Đổi</CardTitle>
+          <CardDescription>Duyệt nội dung markdown đã chuyển đổi</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg border">
@@ -289,7 +289,7 @@ export function ConversionReviewStep({
           </div>
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setViewingResult(null)}>
-              Back to Conversion & Review
+              Quay Lại Chuyển Đổi & Duyệt
             </Button>
           </div>
         </CardContent>
@@ -301,11 +301,11 @@ export function ConversionReviewStep({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Convert to Markdown</CardTitle>
+          <CardTitle>Chuyển Đổi Sang Markdown</CardTitle>
           <CardDescription>
-            Ready to convert your uploaded HTML files to Markdown format for {selectedStream} test case generation.
-            Click "Convert All Files" to start the conversion process.
-            {isConverting && ` Converting file ${currentFileIndex + 1} of ${uploadedFiles.length}...`}
+            Sẵn sàng chuyển đổi tài liệu HTML đã tải lên sang định dạng Markdown để tạo test cases {selectedStream === "business" ? "kịch bản nghiệp vụ" : "kiểm thử kỹ thuật"}.
+            Nhấp "Chuyển Đổi Tất Cả Tài Liệu" để bắt đầu quá trình chuyển đổi.
+            {isConverting && ` Đang chuyển đổi tài liệu ${currentFileIndex + 1} trong ${uploadedFiles.length}...`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -316,10 +316,10 @@ export function ConversionReviewStep({
                   variant="secondary"
                   className={selectedStream === "business" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}
                 >
-                  {selectedStream.charAt(0).toUpperCase() + selectedStream.slice(1)} Stream
+                  Luồng {selectedStream === "business" ? "Nghiệp Vụ" : "Kiểm Thử"}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {isConverting ? "Converting files..." : "Ready for manual conversion"}
+                  {isConverting ? "Đang chuyển đổi tài liệu..." : "Sẵn sàng chuyển đổi thủ công"}
                 </span>
               </div>
               {isDevMode() && (
@@ -333,8 +333,8 @@ export function ConversionReviewStep({
           {uploadedFiles.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">No Files Uploaded</h3>
-              <p className="text-sm text-muted-foreground">Go back to upload some files before proceeding with conversion.</p>
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">Chưa Tải Lên Tài Liệu</h3>
+              <p className="text-sm text-muted-foreground">Quay lại để tải lên một số tài liệu trước khi tiến hành chuyển đổi.</p>
             </div>
           ) : (
             <div className="grid gap-3">
@@ -360,7 +360,7 @@ export function ConversionReviewStep({
                       {status?.status === "completed" && (
                         <Button variant="outline" size="sm" onClick={() => setViewingResult(status.markdownResult || "")}>
                           <Eye className="h-4 w-4 mr-1" />
-                          View
+                          Xem
                         </Button>
                       )}
                       <Button 
@@ -384,16 +384,16 @@ export function ConversionReviewStep({
       {hasAnyConvertedFiles() && (
         <Card className="border-2 border-primary/20">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl">Review Converted Files</CardTitle>
+            <CardTitle className="text-xl">Duyệt Tài Liệu Đã Chuyển Đổi</CardTitle>
             <CardDescription className="text-base">
-              Review the converted Markdown files for {selectedStream} test case generation. If any file doesn't look
-              correct, you can regenerate it.
+              Duyệt các tài liệu Markdown đã chuyển đổi để tạo test cases {selectedStream === "business" ? "kịch bản nghiệp vụ" : "kiểm thử kỹ thuật"}. Nếu tài liệu nào không đúng,
+              bạn có thể tạo lại.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
               <div className="xl:col-span-1 space-y-3">
-                <h3 className="font-medium">Converted Files</h3>
+                <h3 className="font-medium">Tài Liệu Đã Chuyển Đổi</h3>
                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
                   {uploadedFiles.filter(file => {
                     const status = conversionStatuses.find(s => s.fileId === file.id)
@@ -456,10 +456,10 @@ export function ConversionReviewStep({
               <div className="flex items-center space-x-3 mb-6 p-4 bg-green-50 rounded-lg">
                 <CheckCircle className="h-6 w-6 text-green-600" />
                 <div>
-                  <p className="font-semibold text-green-800">Are the files correct and match your documents?</p>
+                  <p className="font-semibold text-green-800">Các tài liệu có chính xác và khớp với tài liệu gốc không?</p>
                   <p className="text-sm text-green-700 mt-1">
-                    Please review each converted file to ensure the content is accurate. If any file needs adjustment, use the
-                    "Regenerate" button to convert it again.
+                    Vui lòng duyệt từng tài liệu đã chuyển đổi để đảm bảo nội dung chính xác. Nếu tài liệu nào cần điều chỉnh, sử dụng
+                    nút "Tạo Lại" để chuyển đổi lại.
                   </p>
                 </div>
               </div>
@@ -470,12 +470,12 @@ export function ConversionReviewStep({
 
       <div className="flex justify-between items-center pt-6 border-t">
         <Button variant="outline" onClick={onBack} disabled={isConverting} size="lg">
-          Back
+          Quay Lại
         </Button>
         <div className="space-x-3">
           {uploadedFiles.length === 0 ? (
             <Button disabled size="lg" className="min-w-48">
-              No Files to Convert
+              Không Có Tài Liệu Để Chuyển Đổi
             </Button>
           ) : allCompleted ? (
             <>
@@ -487,7 +487,7 @@ export function ConversionReviewStep({
                   className="min-w-32"
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  Upload to History
+                  Tải Lên Lịch Sử
                 </Button>
               )}
               <Button 
@@ -497,8 +497,8 @@ export function ConversionReviewStep({
                 className="min-w-48"
               >
                 {!hasAnyConvertedFiles()
-                  ? "Files Not Converted Yet"
-                  : "Files Look Good - Generate Test Cases"}
+                  ? "Tài Liệu Chưa Được Chuyển Đổi"
+                  : "Tài Liệu Ổn - Tạo Test Cases"}
               </Button>
             </>
           ) : (
@@ -511,7 +511,7 @@ export function ConversionReviewStep({
                   className="min-w-32"
                 >
                   <X className="mr-2 h-4 w-4" />
-                  Cancel
+                  Hủy
                 </Button>
               )}
               <Button
@@ -523,10 +523,10 @@ export function ConversionReviewStep({
                 {isConverting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Converting Files...
+                    Đang Chuyển Đổi Tài Liệu...
                   </>
                 ) : (
-                  "Convert All Files"
+                  "Chuyển Đổi Tất Cả Tài Liệu"
                 )}
               </Button>
             </>

@@ -281,9 +281,9 @@ export function HistoryPanel({ onSelectHistoryItem }: HistoryPanelProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-3 flex-shrink-0">
-        <CardTitle className="text-base">Conversion History</CardTitle>
+        <CardTitle className="text-base">Lịch sử chuyển đổi</CardTitle>
         <CardDescription className="text-sm">
-          Markdown files from your conversions
+          Các tệp Markdown từ các lần chuyển đổi của bạn
         </CardDescription>
         
       </CardHeader>
@@ -293,7 +293,7 @@ export function HistoryPanel({ onSelectHistoryItem }: HistoryPanelProps) {
             {historyItems.length === 0 ? (
               <div className="text-center py-8">
                 <FileText className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No conversion history yet</p>
+                <p className="text-sm text-muted-foreground">Chưa có ghi nhận lịch sử chuyển đổi</p>
               </div>
             ) : (
               historyItems
