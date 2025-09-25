@@ -32,6 +32,7 @@ export interface UploadedFile {
   content: string
   convertedContent?: string
   umlContent?: string
+  isManual?: boolean
 }
 
 interface ConversionStatus {
@@ -52,6 +53,7 @@ export default function TestCaseGenerator() {
   const [currentStep, setCurrentStep] = useLocalStorage('currentStep', 0)
   const [selectedStream, setSelectedStream] = useLocalStorage<StreamType | null>('selectedStream', null)
   const [uploadedFiles, setUploadedFiles] = useLocalStorage<UploadedFile[]>('uploadedFiles', [])
+  const [skippedConversion, setSkippedConversion] = useLocalStorage<boolean>('skippedConversion', false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -112,6 +114,17 @@ export default function TestCaseGenerator() {
     }
   }, [currentStep, selectedStream, uploadedFiles.length]) // Added uploadedFiles.length as dependency
 
+  useEffect(() => {
+    if (!skippedConversion) return
+    const hasPendingConversion = uploadedFiles.some(file => !file.convertedContent || file.convertedContent.trim() === '')
+    if (hasPendingConversion) {
+      setSkippedConversion(false)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('skippedConversion')
+      }
+    }
+  }, [uploadedFiles, skippedConversion, setSkippedConversion])
+
   // Additional effect to ensure sync when entering step 2
   useEffect(() => {
     if (currentStep === 2 && selectedStream && uploadedFiles.length > 0) {
@@ -170,18 +183,22 @@ export default function TestCaseGenerator() {
     console.log('handleStreamSelected - setting stream:', stream)
     setSelectedStream(stream)
     setCurrentStep(1)
+    setSkippedConversion(false)
     // Persist to localStorage immediately
     localStorage.setItem('selectedStream', JSON.stringify(stream))
     localStorage.setItem('currentStep', '1')
+    localStorage.removeItem('skippedConversion')
     console.log('handleStreamSelected - persisted to localStorage:', localStorage.getItem('selectedStream'))
   }
 
   const handleBackToStreamSelection = () => {
     setSelectedStream(null)
     setCurrentStep(0)
+    setSkippedConversion(false)
     localStorage.removeItem('selectedStream')
     localStorage.setItem('currentStep', '0')
     localStorage.removeItem('uploadedFiles')
+    localStorage.removeItem('skippedConversion')
   }
 
   const handleGenerateNewTestCase = () => {
@@ -192,12 +209,14 @@ export default function TestCaseGenerator() {
     setIsConverting(false)
     setIsGenerating(false)
     setSelectedHistoryItem(null)
+    setSkippedConversion(false)
 
     // Clear all localStorage data
     localStorage.removeItem('selectedStream')
     localStorage.removeItem('currentStep')
     localStorage.removeItem('uploadedFiles')
     localStorage.removeItem('usingHistoryData')
+    localStorage.removeItem('skippedConversion')
     localStorage.setItem('currentStep', '0')
 
     // Show success message
@@ -210,12 +229,28 @@ export default function TestCaseGenerator() {
     setUploadedFiles(files)
   }
 
+  const handleSkipToGeneration = () => {
+    setSkippedConversion(true)
+    setCurrentStep(3)
+    localStorage.setItem('currentStep', '3')
+    localStorage.setItem('skippedConversion', 'true')
+  }
+
+  const handleProceedToConversion = () => {
+    setSkippedConversion(false)
+    setCurrentStep(2)
+    localStorage.setItem('currentStep', '2')
+    localStorage.removeItem('skippedConversion')
+  }
+
   const handleConvertToMD = () => {
     // The conversion and review are now done in the same step
     // This function is called when user confirms files are ready for test case generation
     syncConvertedContentFromStorage()
     setCurrentStep(3) // Go directly to generate step
     localStorage.setItem('currentStep', '3')
+    setSkippedConversion(false)
+    localStorage.removeItem('skippedConversion')
   }
 
   // Function to update uploaded files with converted content
@@ -267,6 +302,8 @@ export default function TestCaseGenerator() {
   const handleConfirmFiles = () => {
     setCurrentStep(3) // This should now go to generate step
     localStorage.setItem('currentStep', '3')
+    setSkippedConversion(false)
+    localStorage.removeItem('skippedConversion')
   }
 
   const handleRegenerateFile = async (fileId: string) => {
@@ -516,6 +553,16 @@ export default function TestCaseGenerator() {
     setIsGenerating(false)
   }
 
+  const handleBackFromGeneration = () => {
+    const targetStep = skippedConversion ? 1 : 2
+    setCurrentStep(targetStep)
+    localStorage.setItem('currentStep', targetStep.toString())
+    if (skippedConversion) {
+      setSkippedConversion(false)
+      localStorage.removeItem('skippedConversion')
+    }
+  }
+
   const handleHistoryItemSelected = (item: HistoryItem) => {
     setSelectedHistoryItem(item)
   }
@@ -538,11 +585,13 @@ export default function TestCaseGenerator() {
       // Set the selected stream and uploaded files
       setSelectedStream(generationType)
       setUploadedFiles(filesFromHistory)
+      setSkippedConversion(true)
 
       // Set flag so the step 3 effect knows to reload files
       localStorage.setItem('usingHistoryData', 'true')
       localStorage.setItem('selectedStream', generationType)
       localStorage.setItem('uploadedFiles', JSON.stringify(filesFromHistory))
+      localStorage.setItem('skippedConversion', 'true')
 
       // Move to the generation step
       setCurrentStep(3)
@@ -681,7 +730,8 @@ export default function TestCaseGenerator() {
                     {currentStep === 1 && (
                       <FileUploadStep
                         onFilesUploaded={handleFilesUploaded}
-                        onNext={() => setCurrentStep(2)}
+                        onNext={handleProceedToConversion}
+                        onSkipToGeneration={handleSkipToGeneration}
                         onBack={handleBackToStreamSelection}
                         uploadedFiles={uploadedFiles}
                         selectedStream={selectedStream}
@@ -716,10 +766,7 @@ export default function TestCaseGenerator() {
                         selectedStream={selectedStream}
                         isGenerating={isGenerating}
                         onGenerateTestCases={handleGenerateTestCases}
-                        onBack={() => {
-                          setCurrentStep(2)
-                          localStorage.setItem('currentStep', '2')
-                        }}
+                        onBack={handleBackFromGeneration}
                         onGenerateNew={handleGenerateNewTestCase}
                       />
                     )}

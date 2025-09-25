@@ -5,13 +5,17 @@ import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, X, CheckCircle, Loader2, Trash2 } from "lucide-react"
+import { Upload, FileText, CheckCircle, Loader2, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { UploadedFile, StreamType, FileType } from "@/app/page"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface FileUploadStepProps {
   onFilesUploaded: (files: UploadedFile[]) => void
   onNext: () => void
+  onSkipToGeneration: () => void
   onBack: () => void
   uploadedFiles: UploadedFile[]
   selectedStream: StreamType | null
@@ -96,6 +100,7 @@ const validationFileBoxes: FileBoxConfig[] = [
 export function FileUploadStep({
   onFilesUploaded,
   onNext,
+  onSkipToGeneration,
   onBack,
   uploadedFiles,
   selectedStream,
@@ -104,6 +109,10 @@ export function FileUploadStep({
   const [dragActive, setDragActive] = useState<string | null>(null)
   const [removingFileId, setRemovingFileId] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [manualDialogOpen, setManualDialogOpen] = useState(false)
+  const [manualBoxType, setManualBoxType] = useState<FileType | null>(null)
+  const [manualName, setManualName] = useState("")
+  const [manualContent, setManualContent] = useState("")
 
   // Get the appropriate file boxes based on selected stream
   const currentFileBoxes = selectedStream === "validation" ? validationFileBoxes :
@@ -134,14 +143,35 @@ export function FileUploadStep({
     handleFiles(files, boxType)
   }
 
-  const handleFiles = async (files: File[], boxType: FileType) => {
-    // For validation stream, only allow one file total
-    if (selectedStream === "validation" && (uploadedFiles.length > 0 || files.length > 1)) {
-      alert("Validation stream only allows one file. Please remove existing files first.")
+  const addFilesToState = (newFiles: UploadedFile[], boxType: FileType) => {
+    if (selectedStream === "validation" && uploadedFiles.some(file => file.type === boxType)) {
+      alert("Validation stream only allows one document. Please remove the existing entry first.")
       return
     }
 
-    // For business stream, only allow one file per type (except api-integration which allows multiple)
+    if (selectedStream === "validation" && newFiles.length > 1) {
+      alert("Validation stream only accepts a single document at a time.")
+      return
+    }
+
+    if (selectedStream === "business" && boxType !== "api-integration" && uploadedFiles.some(f => f.type === boxType)) {
+      alert(`Only one ${boxType} entry is allowed. Please remove the existing one first.`)
+      return
+    }
+
+    const filteredFiles = boxType === "api-integration"
+      ? uploadedFiles
+      : uploadedFiles.filter((f) => f.type !== boxType)
+
+    onFilesUploaded([...filteredFiles, ...newFiles])
+  }
+
+  const handleFiles = async (files: File[], boxType: FileType) => {
+    if (selectedStream === "validation" && (uploadedFiles.length > 0 || files.length > 1)) {
+      alert("Validation stream only allows one document. Please remove existing files first.")
+      return
+    }
+
     if (selectedStream === "business" && boxType !== "api-integration") {
       const existingFilesOfType = uploadedFiles.filter(f => f.type === boxType)
       if (existingFilesOfType.length > 0 || files.length > 1) {
@@ -162,22 +192,7 @@ export function FileUploadStep({
       })
     }
 
-    // Preserve existing files and their converted content, but remove files of the same type to replace them
-    // Exception: api-integration allows multiple files
-    const existingMap = new Map(uploadedFiles.map(file => [file.id, file]))
-    const filteredFiles = boxType === "api-integration" 
-      ? uploadedFiles 
-      : uploadedFiles.filter((f) => f.type !== boxType)
-    
-    // Merge preserved files with new files
-    const mergedFiles = [...filteredFiles, ...newFiles].map(file => {
-      const existing = existingMap.get(file.id)
-      return existing?.convertedContent 
-        ? { ...file, convertedContent: existing.convertedContent }
-        : file
-    })
-    
-    onFilesUploaded(mergedFiles)
+    addFilesToState(newFiles, boxType)
   }
 
   const readFileContent = (file: File): Promise<string> => {
@@ -223,6 +238,74 @@ export function FileUploadStep({
 
   const getFilesForBox = (boxType: string) => {
     return uploadedFiles.filter((file) => file.type === boxType)
+  }
+
+  const openManualDialog = (boxType: FileType, suggestedName: string) => {
+    setManualBoxType(boxType)
+    setManualName(suggestedName)
+    setManualContent("")
+    setManualDialogOpen(true)
+  }
+
+  const handleManualSubmit = () => {
+    if (!manualBoxType) return
+
+    if (!manualContent.trim()) {
+      setValidationErrors(prev => ({ ...prev, manualContent: "Content is required" }))
+      return
+    }
+
+    const trimmedName = manualName.trim() || `${manualBoxType}-manual-${new Date().toISOString().split('T')[0]}.md`
+
+    const manualFile: UploadedFile = {
+      id: `${Date.now()}-${Math.random()}`,
+      name: trimmedName,
+      type: manualBoxType,
+      content: manualContent,
+      convertedContent: manualContent,
+      isManual: true,
+    }
+
+    addFilesToState([manualFile], manualBoxType)
+    setManualDialogOpen(false)
+    setManualBoxType(null)
+    setValidationErrors(prev => ({ ...prev, manualContent: "" }))
+  }
+
+  const allFilesHaveConvertedContent = uploadedFiles.length > 0 && uploadedFiles.every(file => !!file.convertedContent && file.convertedContent.trim() !== "")
+
+  const validateRequiredFiles = () => {
+    if (!selectedStream) return false
+
+    if (selectedStream === "business") {
+      const hasBusiness = uploadedFiles.some(file => file.type === "business")
+      const hasDetailApi = uploadedFiles.some(file => file.type === "detail-api")
+
+      if (!hasBusiness) {
+        alert("Business stream requires both Business and Detail API documents.")
+        return false
+      }
+    }
+
+    if (selectedStream === "validation") {
+      const hasValidation = uploadedFiles.some(file => file.type === "validation")
+      if (!hasValidation) {
+        alert("Validation stream requires a Validation document.")
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const handleConvertClick = () => {
+    if (!validateRequiredFiles()) return
+    onNext()
+  }
+
+  const handleSkipClick = () => {
+    if (!validateRequiredFiles()) return
+    onSkipToGeneration()
   }
 
   return (
@@ -312,6 +395,25 @@ export function FileUploadStep({
                   </div>
                 </div>
 
+                {box.type !== "uml-image" && (
+                  <div className="flex justify-center">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        const suggestedName = box.type === "validation"
+                          ? "validation-manual-entry.md"
+                          : `${box.type}-manual-entry.md`
+                        openManualDialog(box.type, suggestedName)
+                      }}
+                    >
+                      Paste text instead
+                    </Button>
+                  </div>
+                )}
+
                 <input
                   id={`file-input-${box.type}`}
                   type="file"
@@ -390,14 +492,92 @@ export function FileUploadStep({
           >
             Back
           </Button>
-          <Button onClick={onNext} disabled={uploadedFiles.length === 0} className="min-w-32">
-            {uploadedFiles.length === 0 
-              ? "No Files to Convert" 
-              : `Convert ${uploadedFiles.length} File${uploadedFiles.length > 1 ? 's' : ''}`
-            }
-          </Button>
+          <div className="flex gap-2">
+            {allFilesHaveConvertedContent ? (
+              <Button onClick={handleSkipClick} disabled={uploadedFiles.length === 0} className="min-w-36">
+                Proceed to Generate
+              </Button>
+            ) : (
+              <Button onClick={handleConvertClick} disabled={uploadedFiles.length === 0} className="min-w-32">
+                {uploadedFiles.length === 0 
+                  ? "No Files to Convert" 
+                  : `Convert ${uploadedFiles.length} File${uploadedFiles.length > 1 ? 's' : ''}`
+                }
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
+
+      <Dialog
+        open={manualDialogOpen}
+        onOpenChange={(open) => {
+          setManualDialogOpen(open)
+          if (!open) {
+            setManualContent("")
+            setManualName("")
+            setValidationErrors(prev => ({ ...prev, manualContent: "" }))
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Paste document content</DialogTitle>
+            <DialogDescription>
+              Provide the document name and content. This will be treated the same as a converted file and will skip the conversion step.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="manual-name">Document name</Label>
+              <Input
+                id="manual-name"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                placeholder="business-requirements.md"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="manual-content">Content</Label>
+              <textarea
+                id="manual-content"
+                value={manualContent}
+                onChange={(e) => {
+                  setManualContent(e.target.value)
+                  if (validationErrors.manualContent) {
+                    setValidationErrors(prev => ({ ...prev, manualContent: "" }))
+                  }
+                }}
+                placeholder="Paste your Markdown content here"
+                className={cn(
+                  "w-full h-64 rounded-md border border-input bg-background px-3 py-2 text-sm",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                )}
+              />
+              {validationErrors.manualContent && (
+                <p className="text-sm text-red-600">{validationErrors.manualContent}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setManualDialogOpen(false)
+                setValidationErrors(prev => ({ ...prev, manualContent: "" }))
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleManualSubmit} disabled={!manualContent.trim()}>
+              Save Manual Entry
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
